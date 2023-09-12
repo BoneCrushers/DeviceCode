@@ -90,6 +90,12 @@ audioTest1()
 # 1/2 speed should result in 20 sec.
 
 
+#git status
+#git add .
+#git status
+#git commit -m ""
+#git push
+
 
 
 
@@ -108,7 +114,6 @@ audioTest1()
 # volume multiplier for each transducer based on requirements found later. (Ex. a transducer placed just behind
 # the ear will be on muscle, thus need to be 'louder' in order to transfer sound as effectively as in front of the ear)
 
-#
 
 # def ?()
 ##This line v will need adjustments, change to read from stream instead of from buffer
