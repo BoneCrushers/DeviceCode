@@ -1,0 +1,60 @@
+FILE HEADER LAYOUT
+1 - 4	“RIFF”	Marks the file as a riff file. Characters are each 1 byte long.
+5 - 8	File size (integer)	Size of the overall file - 8 bytes, in bytes (32-bit integer). Typically, you’d fill this in after creation.
+9 -12	“WAVE”	File Type Header. For our purposes, it always equals “WAVE”.
+13-16	“fmt "	Format chunk marker. Includes trailing null
+17-20	16	Length of format data as listed above
+21-22	1	Type of format (1 is PCM) - 2 byte integer
+23-24	2	Number of Channels - 2 byte integer
+25-28	44100	Sample Rate - 32 byte integer. Common values are 44100 (CD), 48000 (DAT). Sample Rate = Number of Samples per second, or Hertz.
+29-32	176400	(Sample Rate * BitsPerSample * Channels) / 8.
+33-34	4	(BitsPerSample * Channels) / 8.1 - 8 bit mono2 - 8 bit stereo/16 bit mono4 - 16 bit stereo
+35-36	16	Bits per sample
+37-40	“data”	“data” chunk header. Marks the beginning of the data section.
+41-44	File size (data)	Size of the data section.
+
+
+    Utilizing github via command prompt:
+git status
+git add .
+git status
+git commit -m ""
+git push
+
+
+
+  ***Things to check***
+is it better to separate out the 4 channel 
+Will need to edit both the main play sound function and audiocallback function?
+Are data lines crossed in the soundcard?
+Earbuds have 4 inputs, is this affecting output?
+Can we use wave file reader or are we going to have to use the standard read function?
+
+
+Common Variables:
+W = Sound sphere as a whole, all directions. Base for manipulating sound
+X = Front minus Back, positive value correlates to sound in Front
+Y = Left minus Right, positive value correlates to sound on Left side
+Z = Up minus Down, positive value correlates to sound Above
+
+Speaker Specific Variables:
+a = Azimuth angle, horizontal angle relative to the user's front facing direction
+b = Zenith angle, vertical angle relative to the users straight line view.
+c = Speaker constant. This is unique, going to be hard coded, likely as a list, and used as a type of
+volume multiplier for each transducer based on requirements found later. (Ex. a transducer placed just behind
+the ear will be on muscle, thus need to be 'louder' in order to transfer sound as effectively as in front of the ear)
+
+** 
+Under further thought, all of these will need to be hard coded for each speaker, as pure angles arent very accurate
+for placing sound in a realistic way using bone conduction. 
+Also, utilizing trig will need to adjust for a double negative, as input  already accounts for both sides
+so we need to negate the possible negative value applied by sin/cos (absolute value or (%180)/(%180-90))
+**
+
+Equation:
+c * (W + cos(a)*X + sin(a)*Y + cos(b)*Z)
+
+perfectly horizontal right side: a = 90, b = 0
+    c * (W + (0)*X + (1)*Y + (0)*Z)
+    
+
