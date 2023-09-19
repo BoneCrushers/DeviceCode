@@ -21,6 +21,16 @@ git status
 git commit -m ""
 git push
 
+CHANNEL LAYOUT (with provided earbuds/soundcard)
+Computer setup (mmsys.cpl, configure usb soundcard, 7.1 surround)
+channel1 = Front port Left ear
+channel2 = Front port Right ear
+channel3 = Center port Left ear
+channel4 = Center port Right ear
+channel5 = Back port Left ear
+channel6 = Back port Right ear
+channel7 = Surround port Left ear
+channel8 = Surround port Right ear
 
 
   ***Things to check***

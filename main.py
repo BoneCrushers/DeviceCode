@@ -11,11 +11,16 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
 
     #Open the file
     amb = open(wav_file, 'rb')
-    fileHeader = amb.readline(44)
-    fileHeaderPT2 = amb.readline((int.from_bytes(fileHeader[36:40], byteorder='little'))+100)
-    print("data start?",int.from_bytes(fileHeader[36:40], byteorder='big'))
+    fileHeader = amb.readline() + amb.readline(13)
+    print('fileHeader: ',fileHeader)
     print("len(fileHeader)",len(fileHeader))
-    print("len(fileHeaderPT2)",len(fileHeaderPT2))
+    print('TypeOfFormat',int.from_bytes(fileHeader[20:22], byteorder='little'))
+    FILE_SIZE = int.from_bytes(fileHeader[4:8], byteorder='little')
+    print('FILE_SIZE',FILE_SIZE)
+    DATA_SIZE = int.from_bytes(fileHeader[40:44], byteorder='little')
+    print("DATA_SIZE", DATA_SIZE)
+    fileHeaderDATA = amb.readline(59)
+
     # CONSTANTS BASED ON FILE 
     TEST_SIZE = fileHeader[4:8] # Should be near 6.42 MB
     print("FileSize", int.from_bytes(TEST_SIZE, byteorder='little'))
@@ -26,61 +31,59 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
     CHANNEL_COUNT = int.from_bytes(fileHeader[22:24], byteorder='little')
     print("ChannelCount", CHANNEL_COUNT)
     
-    print(fileHeader)
-    print(fileHeaderPT2)
-    counter = 0
 
     def changeVolumeAmbisonics(audioData, volume):
-        print(audioData)
         dataArray = np.frombuffer(audioData, dtype=np.int16)
         newAudio = (dataArray * volume).astype(np.int16)
         return newAudio.tobytes()
 
     def audioCallbackAmbisonics(inData, frameCount, timeInfo, status):
         audioData = amb.readline(frameCount*FRAME_SIZE_IN_BYTES)
-        audioData = changeVolumeAmbisonics(audioData, ambvolume)
-        returnData = []
+        print("FrameCount",frameCount, "len(audioData)",len(audioData), "expected:Len(audioData)", frameCount*FRAME_SIZE_IN_BYTES)
+        # print("FRAME_SIZE_IN_BYTES",FRAME_SIZE_IN_BYTES)
+        # print("len(audioData)",len(audioData))
+        returnData = bytearray()#bytearray(changeVolumeAmbisonics(audioData, ambvolume))
+
+
         #adByteStart is the counter to track where in audioData we currently are
         adByteStart=0
         for i in range(frameCount):
-            adByteEnd = adByteStart+FRAME_SIZE_IN_BYTES
-            workingData = audioData[adByteStart:adByteEnd]
-            #workingData now holds 1 frame of INPUT data, does not match size of output.
-            #stored as [0:2] = 2-bytes channel W, [2:4] = 2-bytes channel X, ...
+            workingData = [
+                int.from_bytes(audioData[adByteStart:adByteStart+2], byteorder='big'),
+                int.from_bytes(audioData[adByteStart+2:adByteStart+4], byteorder='big'),
+                int.from_bytes(audioData[adByteStart+4:adByteStart+6], byteorder='big'),
+                int.from_bytes(audioData[adByteStart+6:adByteStart+8], byteorder='big')
+                ]
+            #WorkingData holds 1 frame of data, stored as 16 bit integers in 4 slots, each corresponding to a channel WXYZ
             #channel1
-            returnData.append(bytes(
-                workingData[0:2]# + workingData[2:4] + workingData[4:6] + workingData[6:8]
-                ))
+            channel1 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
+            returnData.extend([channel1%256, channel1//256])
             #channel2
-            returnData.append(bytes(
-                workingData[0:2]# + workingData[2:4] + workingData[4:6] + workingData[6:8]
-                ))
+            channel2 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
+            returnData.extend([channel2//256, channel2%256])
             #channel3
-            returnData.append(bytes(
-                workingData[0:2]# + workingData[2:4] + workingData[4:6] + workingData[6:8]
-                ))
+            channel3 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
+            returnData.extend([0, 0])#[channel3 // 256, channel3%256])
             #channel4
-            returnData.append(bytes(
-                workingData[0:2]# + workingData[2:4] + workingData[4:6] + workingData[6:8]
-                ))
+            channel4 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
+            returnData.extend([0, 0])#[channel4 // 256, channel4%256])
             #channel5
-            returnData.append(bytes(
-                workingData[0:2]# + workingData[2:4] + workingData[4:6] + workingData[6:8]
-                ))
+            channel5 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
+            returnData.extend([0, 0])#[channel5 // 256, channel5%256])
             #channel6
-            returnData.append(bytes(
-                workingData[0:2]# + workingData[2:4] + workingData[4:6] + workingData[6:8]
-                ))
+            channel6 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
+            returnData.extend([0, 0])#[channel6 // 256, channel6%256])
             #channel7
-            returnData.append(bytes(
-                workingData[0:2]# + workingData[2:4] + workingData[4:6] + workingData[6:8]
-                ))
+            channel7 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
+            returnData.extend([0, 0])#[channel7 // 256, channel7%256])
             #channel8
-            returnData.append(bytes(
-                workingData[0:2]# + workingData[2:4] + workingData[4:6] + workingData[6:8]
-                ))
+            channel8 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
+            returnData.extend([0, 0])#[channel8 // 256, channel8%256])
 
-        return returnData, pyaudio.paContinue
+            adByteStart += 8
+
+        # returnData = changeVolumeAmbisonics(returnData, ambvolume)
+        return bytes(returnData), pyaudio.paContinue
     
     def playAudioChannel(file=ambFile, speed=1):
         # Initialize PyAudio
@@ -94,9 +97,13 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
                         stream_callback=audioCallbackAmbisonics)
         # Start the stream
         stream.start_stream()
-        # print(pa.is_stream_active(pa.stream(stream)).__class__)
-        while stream.is_active():
+        try:
+            while stream.is_active():
+                pass
+        except ValueError:
+            #in event _portaudio shits itself, unable to edit as it is in compiled binary
             pass
+
         # Close the stream and PyAudio
         stream.stop_stream()
         stream.close()
