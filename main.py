@@ -1,6 +1,4 @@
 import pyaudio
-import pyaudio._portaudio as pa
-import wave
 import numpy as np
 import os
 
@@ -11,7 +9,7 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
 
     #Open the file
     amb = open(wav_file, 'rb')
-    fileHeader = amb.readline() + amb.readline(13)
+    fileHeader = amb.readline() + amb.readline(17)
     print('fileHeader: ',fileHeader)
     print("len(fileHeader)",len(fileHeader))
     print('TypeOfFormat',int.from_bytes(fileHeader[20:22], byteorder='little'))
@@ -19,7 +17,6 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
     print('FILE_SIZE',FILE_SIZE)
     DATA_SIZE = int.from_bytes(fileHeader[40:44], byteorder='little')
     print("DATA_SIZE", DATA_SIZE)
-    fileHeaderDATA = amb.readline(59)
 
     # CONSTANTS BASED ON FILE 
     TEST_SIZE = fileHeader[4:8] # Should be near 6.42 MB
@@ -30,6 +27,10 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
     print("FrameRate", FRAME_RATE)
     CHANNEL_COUNT = int.from_bytes(fileHeader[22:24], byteorder='little')
     print("ChannelCount", CHANNEL_COUNT)
+    VALID_BITS_PER_SAMPLE = int.from_bytes(fileHeader[36:38], byteorder='little')
+    print("ValidBits/Sample", VALID_BITS_PER_SAMPLE)
+    SUBFORMAT_GUID = fileHeader[42:60]
+    print("SUBFORMAT_GUID", SUBFORMAT_GUID)
     
 
     def changeVolumeAmbisonics(audioData, volume):
@@ -38,35 +39,38 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
         return newAudio.tobytes()
 
     def audioCallbackAmbisonics(inData, frameCount, timeInfo, status):
-        audioData = amb.readline(frameCount*FRAME_SIZE_IN_BYTES)
-        print("FrameCount",frameCount, "len(audioData)",len(audioData), "expected:Len(audioData)", frameCount*FRAME_SIZE_IN_BYTES)
+        audioData = amb.read(frameCount*FRAME_SIZE_IN_BYTES) 
+        if(len(audioData) < frameCount*FRAME_SIZE_IN_BYTES):
+            return bytes(), pyaudio.paComplete
+        print("FrameCount",frameCount, "expected:Len(audioData)", frameCount*FRAME_SIZE_IN_BYTES, "len(audioData)",len(audioData))
         # print("FRAME_SIZE_IN_BYTES",FRAME_SIZE_IN_BYTES)
         # print("len(audioData)",len(audioData))
         returnData = bytearray()#bytearray(changeVolumeAmbisonics(audioData, ambvolume))
-
+        audioData = changeVolumeAmbisonics(audioData, ambvolume)
 
         #adByteStart is the counter to track where in audioData we currently are
         adByteStart=0
         for i in range(frameCount):
             workingData = [
-                int.from_bytes(audioData[adByteStart:adByteStart+2], byteorder='big'),
-                int.from_bytes(audioData[adByteStart+2:adByteStart+4], byteorder='big'),
-                int.from_bytes(audioData[adByteStart+4:adByteStart+6], byteorder='big'),
-                int.from_bytes(audioData[adByteStart+6:adByteStart+8], byteorder='big')
+                int.from_bytes(audioData[adByteStart:adByteStart+2], byteorder='little'),
+                int.from_bytes(audioData[adByteStart+2:adByteStart+4], byteorder='little'),
+                int.from_bytes(audioData[adByteStart+4:adByteStart+6], byteorder='little'),
+                int.from_bytes(audioData[adByteStart+6:adByteStart+8], byteorder='little')
                 ]
+
             #WorkingData holds 1 frame of data, stored as 16 bit integers in 4 slots, each corresponding to a channel WXYZ
             #channel1
             channel1 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
             returnData.extend([channel1%256, channel1//256])
             #channel2
             channel2 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
-            returnData.extend([channel2//256, channel2%256])
+            returnData.extend([channel2%256, channel2//256])
             #channel3
             channel3 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
-            returnData.extend([0, 0])#[channel3 // 256, channel3%256])
+            returnData.extend([0, 0])
             #channel4
             channel4 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
-            returnData.extend([0, 0])#[channel4 // 256, channel4%256])
+            returnData.extend([0, 0])
             #channel5
             channel5 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
             returnData.extend([0, 0])#[channel5 // 256, channel5%256])
@@ -80,9 +84,9 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
             channel8 = workingData[0]# + workingData[1] + workingData[2] + workingData[3]
             returnData.extend([0, 0])#[channel8 // 256, channel8%256])
 
+            
             adByteStart += 8
 
-        # returnData = changeVolumeAmbisonics(returnData, ambvolume)
         return bytes(returnData), pyaudio.paContinue
     
     def playAudioChannel(file=ambFile, speed=1):
@@ -115,7 +119,7 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
     playAudioChannel()
 
 
-
+playAmbisonics(wav_file, ambvolume=1)
 
 # def changeVolume(audioData, volume):
 #     dataArray = np.frombuffer(audioData, dtype=np.int16)
@@ -246,4 +250,4 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
 
 
 
-playAmbisonics(wav_file, ambvolume=.1, speed=1)
+

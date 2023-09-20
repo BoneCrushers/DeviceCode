@@ -10,8 +10,28 @@ FILE HEADER LAYOUT
 29-32	176400	(Sample Rate * BitsPerSample * Channels) / 8.
 33-34	4	(BitsPerSample * Channels) / 8.1 - 8 bit mono2 - 8 bit stereo/16 bit mono4 - 16 bit stereo
 35-36	16	Bits per sample
-37-40	“data”	“data” chunk header. Marks the beginning of the data section.
-41-44	File size (data)	Size of the data section.
+37-38        wValidBitsPerSample	Number of valid bits                                                        37-40	“data”	“data” chunk header. Marks the beginning of the data section.
+39-42        dwChannelMask	Speaker position mask                                                        41-44	File size (data)	Size of the data section.
+43-60        SubFormat	GUID, including the data format code
+
+Extensible Format
+The WAVE_FORMAT_EXTENSIBLE format code indicates that there is an extension to the Format chunk. The extension has one field which declares the number of valid bits/sample (wValidBitsPerSample). Another field (dwChannelMask) contains bits which indicate the mapping from channels to loudspeaker positions. The last field (SubFormat) is a 16-byte globally unique identifier (GUID).
+
+With the WAVE_FORMAT_EXTENSIBLE format, the original bits/sample field (wBitsPerSample) must match the container size (8 * nBlockAlign / nChannels). This means that wBitsPerSample must be a multiple of 8. Reduced precision within the container size is now specified by wValidBitsPerSample.
+The number of valid bits (wValidBitsPerSample) is informational only. The data is correctly represented in the precision of the container size. The number of valid bits can be any value from 1 to the container size in bits.
+The loudspeaker position mask uses 18 bits, each bit corresponding to a speaker position (e.g. Front Left or Top Back Right), to indicate the channel to speaker mapping. More details are in the document cited above. This field is informational. An all-zero field indicates that channels are mapped to outputs in order: first channel to first output, second channel to second output, etc.
+The first two bytes of the GUID form the sub-code specifying the data format code, e.g. WAVE_FORMAT_PCM. The remaining 14 bytes contain a fixed string, \x00\x00\x00\x00\x10\x00\x80\x00\x00\xAA\x00\x38\x9B\x71.
+The WAVE_FORMAT_EXTENSIBLE format should be used whenever:
+
+PCM data has more than 16 bits/sample.
+The number of channels is more than 2.
+The actual number of bits/sample is not equal to the container size.
+The mapping from channels to speakers needs to be specified.
+
+
+To edit sound card settings:
+open command line: cmd in search bar and type
+mmsys.cpl
 
 
     Utilizing github via command prompt:
