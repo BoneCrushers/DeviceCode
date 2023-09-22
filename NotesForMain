@@ -1,0 +1,90 @@
+FILE HEADER LAYOUT
+1 - 4	“RIFF”	Marks the file as a riff file. Characters are each 1 byte long.
+5 - 8	File size (integer)	Size of the overall file - 8 bytes, in bytes (32-bit integer). Typically, you’d fill this in after creation.
+9 -12	“WAVE”	File Type Header. For our purposes, it always equals “WAVE”.
+13-16	“fmt "	Format chunk marker. Includes trailing null
+17-20	16	Length of format data as listed above
+21-22	1	Type of format (1 is PCM) - 2 byte integer
+23-24	2	Number of Channels - 2 byte integer
+25-28	44100	Sample Rate - 32 byte integer. Common values are 44100 (CD), 48000 (DAT). Sample Rate = Number of Samples per second, or Hertz.
+29-32	176400	(Sample Rate * BitsPerSample * Channels) / 8.
+33-34	4	(BitsPerSample * Channels) / 8.1 - 8 bit mono2 - 8 bit stereo/16 bit mono4 - 16 bit stereo
+35-36	16	Bits per sample
+37-38        wValidBitsPerSample	Number of valid bits                                                        37-40	“data”	“data” chunk header. Marks the beginning of the data section.
+39-42        dwChannelMask	Speaker position mask                                                        41-44	File size (data)	Size of the data section.
+43-60        SubFormat	GUID, including the data format code
+
+Extensible Format
+The WAVE_FORMAT_EXTENSIBLE format code indicates that there is an extension to the Format chunk. The extension has one field which declares the number of valid bits/sample (wValidBitsPerSample). Another field (dwChannelMask) contains bits which indicate the mapping from channels to loudspeaker positions. The last field (SubFormat) is a 16-byte globally unique identifier (GUID).
+
+With the WAVE_FORMAT_EXTENSIBLE format, the original bits/sample field (wBitsPerSample) must match the container size (8 * nBlockAlign / nChannels). This means that wBitsPerSample must be a multiple of 8. Reduced precision within the container size is now specified by wValidBitsPerSample.
+The number of valid bits (wValidBitsPerSample) is informational only. The data is correctly represented in the precision of the container size. The number of valid bits can be any value from 1 to the container size in bits.
+The loudspeaker position mask uses 18 bits, each bit corresponding to a speaker position (e.g. Front Left or Top Back Right), to indicate the channel to speaker mapping. More details are in the document cited above. This field is informational. An all-zero field indicates that channels are mapped to outputs in order: first channel to first output, second channel to second output, etc.
+The first two bytes of the GUID form the sub-code specifying the data format code, e.g. WAVE_FORMAT_PCM. The remaining 14 bytes contain a fixed string, \x00\x00\x00\x00\x10\x00\x80\x00\x00\xAA\x00\x38\x9B\x71.
+The WAVE_FORMAT_EXTENSIBLE format should be used whenever:
+
+PCM data has more than 16 bits/sample.
+The number of channels is more than 2.
+The actual number of bits/sample is not equal to the container size.
+The mapping from channels to speakers needs to be specified.
+
+
+To edit sound card settings:
+open command line: cmd in search bar and type
+mmsys.cpl
+
+
+    Utilizing github via command prompt:
+git status
+git add .
+git status
+git commit -m ""
+git push
+
+CHANNEL LAYOUT (with provided earbuds/soundcard)
+Computer setup (mmsys.cpl, configure usb soundcard, 7.1 surround)
+channel1 = Front port Left ear
+channel2 = Front port Right ear
+channel3 = Center port Left ear
+channel4 = Center port Right ear
+channel5 = Back port Left ear
+channel6 = Back port Right ear
+channel7 = Surround port Left ear
+channel8 = Surround port Right ear
+
+
+  ***Things to check***
+is it better to separate out the 4 channel 
+Will need to edit both the main play sound function and audiocallback function?
+Are data lines crossed in the soundcard?
+Earbuds have 4 inputs, is this affecting output?
+Can we use wave file reader or are we going to have to use the standard read function?
+
+
+Common Variables:
+W = Sound sphere as a whole, all directions. Base for manipulating sound
+X = Front minus Back, positive value correlates to sound in Front
+Y = Left minus Right, positive value correlates to sound on Left side
+Z = Up minus Down, positive value correlates to sound Above
+
+Speaker Specific Variables:
+a = Azimuth angle, horizontal angle relative to the user's front facing direction
+b = Zenith angle, vertical angle relative to the users straight line view.
+c = Speaker constant. This is unique, going to be hard coded, likely as a list, and used as a type of
+volume multiplier for each transducer based on requirements found later. (Ex. a transducer placed just behind
+the ear will be on muscle, thus need to be 'louder' in order to transfer sound as effectively as in front of the ear)
+
+** 
+Under further thought, all of these will need to be hard coded for each speaker, as pure angles arent very accurate
+for placing sound in a realistic way using bone conduction. 
+Also, utilizing trig will need to adjust for a double negative, as input  already accounts for both sides
+so we need to negate the possible negative value applied by sin/cos (absolute value or (%180)/(%180-90))
+**
+
+Equation:
+c * (W + cos(a)*X + sin(a)*Y + cos(b)*Z)
+
+perfectly horizontal right side: a = 90, b = 0
+    c * (W + (0)*X + (1)*Y + (0)*Z)
+    
+
