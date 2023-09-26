@@ -1,3 +1,7 @@
+
+
+
+
 FILE HEADER LAYOUT
 1 - 4	“RIFF”	Marks the file as a riff file. Characters are each 1 byte long.
 5 - 8	File size (integer)	Size of the overall file - 8 bytes, in bytes (32-bit integer). Typically, you’d fill this in after creation.
@@ -10,9 +14,26 @@ FILE HEADER LAYOUT
 29-32	176400	(Sample Rate * BitsPerSample * Channels) / 8.
 33-34	4	(BitsPerSample * Channels) / 8.1 - 8 bit mono2 - 8 bit stereo/16 bit mono4 - 16 bit stereo
 35-36	16	Bits per sample
-37-38        wValidBitsPerSample	Number of valid bits                                                        37-40	“data”	“data” chunk header. Marks the beginning of the data section.
+37-38        wValidBitsPerSample	Number of valid bits 
 39-42        dwChannelMask	Speaker position mask                                                        41-44	File size (data)	Size of the data section.
 43-60        SubFormat	GUID, including the data format code
+
+paste after constants in playAmbisonics()for header info 
+    #print('fileHeader: ',fileHeader)
+    #print("len(fileHeader)",len(fileHeader))
+    #print('TypeOfFormat',int.from_bytes(fileHeader[20:22], byteorder='little'))
+    #print('FILE_SIZE',FILE_SIZE)
+    #print("DATA_SIZE", DATA_SIZE)
+    #print("FileSize", int.from_bytes(TEST_SIZE, byteorder='little')) # Should be near 6.42 MB
+    #print("FrameSizeInBytes", FRAME_SIZE_IN_BYTES)
+    #print("FrameRate", FRAME_RATE)
+    #print("ChannelCount", CHANNEL_COUNT)
+    #print("ValidBits/Sample", VALID_BITS_PER_SAMPLE)
+    #print("SUBFORMAT_GUID", SUBFORMAT_GUID)
+paste in audioCallbackAmbisonics() for data info
+    #print("FrameCount",frameCount, "expected:Len(audioData)", frameCount*FRAME_SIZE_IN_BYTES, "len(audioData)",len(audioData))
+
+
 
 Extensible Format
 The WAVE_FORMAT_EXTENSIBLE format code indicates that there is an extension to the Format chunk. The extension has one field which declares the number of valid bits/sample (wValidBitsPerSample). Another field (dwChannelMask) contains bits which indicate the mapping from channels to loudspeaker positions. The last field (SubFormat) is a 16-byte globally unique identifier (GUID).
