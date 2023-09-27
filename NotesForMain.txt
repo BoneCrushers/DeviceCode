@@ -1,7 +1,3 @@
-
-
-
-
 FILE HEADER LAYOUT
 1 - 4	“RIFF”	Marks the file as a riff file. Characters are each 1 byte long.
 5 - 8	File size (integer)	Size of the overall file - 8 bytes, in bytes (32-bit integer). Typically, you’d fill this in after creation.
@@ -109,3 +105,6 @@ perfectly horizontal right side: a = 90, b = 0
     c * (W + (0)*X + (1)*Y + (0)*Z)
     
 
+pip requirements file?
+node.js for virtual environment installer
+end user testing strategy, how would we test this
