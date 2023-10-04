@@ -1,0 +1,44 @@
+A simple file that will be used for planning and plotting 
+different problems, current and future, to overcome. Unsure as of yet,
+but may include research/notes.
+
+Overflow problem ***WIP***
+
+
+
+Integer to bytes problem ***WIP***
+currently, when we have a value we want to convert to bytes, we use this line:
+[*DATA*%256, *DATA*//256]
+to get the lower and upper 8 bits respectively for each byte as an integer with a range of (0, 255) then convert that to bytes. This worked until now only because we used the W channel, which is only positive.
+in order to start combining channels, we need to be able to convert an integer to bytes, with a couple of rules:
+    the number of bytes per int conversion CANNOT exceed 2
+    overflow must be dealt with in a clean manner, (if it exists at all)
+        should we have overflow? its possible this shouldnt be an issue at all with the correct equations/math. 
+
+
+Equations:
+Range of input:
+    W= (0, 65535)
+    X= (0, 65535)
+    Y= (0, 65535)
+    Z= (0, 65535)
+Peculiar similarities among some data?
+ranges are as above, but there are some smaller ranges which are much more common.
+ex. after being split up into </> 30000 (basically upper and lower half), the average per chunk for W is rarely above 1000 on the lower end and below 64700 on the upper end, with no values at all between approx 51000 and 4500, a *massive* range of data to randomly have zero plot points. Note, this is with the volume function set to 1, which should mean there is no effect on the output.
+
+
+
+
+
+
+
+Audio Normalization ***WIP***
+idea for audio normalization: (*Probably wont work*)
+curavg = average samples for (each channel OR less likely overall?),  
+    select size based on fraction of FRAME_RATE or chunk size (whichever is smaller)
+        *may need to use fraction of chunk size to avoid averages of different sizes*
+average prevavg and curavg (init prevavg at 0, should cause a very quick fade-in.)
+    lasting impact of each average taken will be 1/2^n where n is the number of frames ago it came
+Unsure: Add/Subtract from each channel or Multiply samples by percentage of the max int that curavg is.
+    +/-: (possible unintended impact on values near 0?)
+    x: (seems computationally expensive)

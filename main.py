@@ -6,14 +6,14 @@ import math
 # Getting File Directory
 wav_file = os.getcwd()+"\\SoundFiles\\"+      "Chicago_Amb_Elevated_Train_B-Format_44.1_16.wav"
 
-# Speakers. Input speakers as a list of ORIGIN VALUES, as though you were facing 0:0
+# Speakers. Input speakers as a list of ORIGIN VALUES, as though you were facing 0|0
 # (Azimuth angle, Zenith angle, Speaker Constant, Channel number)
 # In this code, this length will be assumed to be either 2 or 8. testing with odd numbers or greater 
 # than 8 channels will likely cause a lot of problems with deciding where to map channels, etc
 # todo? map channels in a different order than list's order? Is this necessary?
 # todo? 
 
-#   (Azimuth angle, Zenith angle, Speaker Constant, Channel number)      
+#   (Horizontal angle, Vertical angle, Speaker Constant, Channel number)      
 #   ******  v  EDIT ME  v  ******
 SPEAKER_INFORMATION = [
     [90, 0, 1, 1],
@@ -39,7 +39,14 @@ speakerList = SPEAKER_INFORMATION.copy()
 
 def playAmbisonics(ambFile, ambvolume=.1, speed=1):
     """
-    Doc String
+    ambfile= .wav file for reading
+    ambvolume= volume for file to be played at. 0 <= value <= 1
+    speed= speed, float value.
+
+    will be reformatted to main eventually
+    Runs calculations to play ambisonics from a file.
+    Currently, the ambisonics file is assumed to have some properties:
+        data values stored as int16, number of channels is 4, byteorder='little'
     """
     #Open the file
     amb = open(ambFile, 'rb')
@@ -61,6 +68,9 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
         dataArray = np.frombuffer(audioData, dtype=np.int16)
         newAudio = (dataArray * volume).astype(np.int16)
         return newAudio.tobytes()
+    
+
+
 
     def audioCallbackAmbisonics(inData, frameCount, timeInfo, status):
         audioData = amb.read(frameCount*FRAME_SIZE_IN_BYTES) 
@@ -69,50 +79,42 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
 
         #adByteStart is the counter to track where in audioData we currently are
         adByteStart=0
+
         for i in range(frameCount):
             #WorkingData holds 1 frame of data, stored as 16 bit integers in 4 slots, 
             #each corresponding to a channel WXYZ
             workingData = [int.from_bytes(audioData[adByteStart+x:adByteStart+x+2], byteorder='little') for x in range(0,8,2)]
+
             # Iterates the speaker list. If a speaker is an empty list, we just append two 0 bytes (for balancing channel numbers),
             # else we append our ambisonics algorithm for determining sound output of the speaker based on angles provided.
             for s in speakerList:
-                channel = ambisonicsCalculations(workingData, s, returnZero=(len(s)==0))
-                print ("channel value:", channel)
-                # print("[channel%256, channel//256]", channel%256, channel//256)
-                returnData.extend(np.array(channel, dtype=np.int16).tobytes())
-                # returnData.extend([channel%256, channel//256])
-
-            
+                channel = ambisonicsCalculations(workingData, s, returnZero= (len(s) == 0))
+                #   vvv   NEEDS TO BE CHANGED   vvv
+                print (channel,workingData)
+                returnData.extend([channel%256, channel//256])
             adByteStart += 8
 
-
-        #what is divmod()? may be faster look into
-
-        if(len(audioData) < frameCount*FRAME_SIZE_IN_BYTES):
-            return bytes(returnData[0:len(audioData)*2]), pyaudio.paComplete
-        # ERROR ON NEGATIVE NUMBERS, NEED TO FIND GI
-        return bytes(returnData), pyaudio.paContinue
+        return bytes(returnData[0:(int(len(audioData)*(len(speakerList))>>2))]), pyaudio.paContinue
 
     def ambisonicsCalculations(audioData, speakerData, returnZero=False):
         if returnZero:
             return 0
         sample = 0
         #audioData = [W, X, Y, Z]
-        #speakerData = (Azimuth angle, Zenith angle, Speaker Constant, Channel number)
+        #speakerData = [Azimuth angle, Zenith angle, Speaker Constant, Channel number]
         #Calculations Here:
-        sample = speakerData[2]*    ( 
-                                    audioData[0] +
-                                    math.sin(speakerData[0])*audioData[1] +
-                                    math.cos(speakerData[0])*audioData[2] +
-                                    math.sin(speakerData[1])*audioData[3]
-                                    )
-        sample = int(sample/2)
-        #Testing
-        #print("Sample value:", sample, "Sample Class:", sample.__class__)
-        #divmod()?
-        #End Calculations
-        return sample
-    
+        # sample = int( speakerData[2]*    ( 
+        #                             audioData[0] +
+        #                             math.sin(speakerData[0])*audioData[1] +
+        #                             math.cos(speakerData[0])*audioData[2] +
+        #                             math.sin(speakerData[1])*audioData[3]
+        #                             ))
+        return (np.int16(np.int16(
+                1.41421356*audioData[0] + 
+                math.sin(speakerData[0])*audioData[1] + #sin(azimuth)*X, the length of the vertical component of the position of our speaker
+                math.cos(speakerData[0])*audioData[2])  #cos(azimuth)*Y, the length of the horizontal component of the position of our speaker
+                *2.82842712 #sqrt 8, fain factor
+        )) #end of conversion to int 
     
     def playAudioChannel(speed=1):
         # Initialize PyAudio
@@ -131,6 +133,8 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
                 pass
         except ValueError:
             pass
+        except ZeroDivisionError:
+            pass
 
         print("Done!")
         # Close the stream and PyAudio
@@ -140,13 +144,7 @@ def playAmbisonics(ambFile, ambvolume=.1, speed=1):
 
         # Close the WAV file
         amb.close()
-
-
-
-
-
-
     playAudioChannel(speed)
 
 
-playAmbisonics(wav_file, ambvolume=1)
+playAmbisonics(wav_file, ambvolume=1, speed=1)
