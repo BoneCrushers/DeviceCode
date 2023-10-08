@@ -12,7 +12,7 @@ FILE HEADER LAYOUT
 35-36	16	Bits per sample
 37-38        wValidBitsPerSample	Number of valid bits 
 39-42        dwChannelMask	Speaker position mask                                                        41-44	File size (data)	Size of the data section.
-43-60        SubFormat	GUID, including the data format code
+43-58        SubFormat	GUID, including the data format code
 
 paste after constants in playAmbisonics()for header info 
     #print('fileHeader: ',fileHeader)
