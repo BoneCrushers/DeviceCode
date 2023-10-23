@@ -74,8 +74,9 @@ class Slider:
         self.label.pack(pady=10)
         self.frame.grid(row=1, column=1, padx=20, pady=10)  # Place in the grid
 
-    def onSliderChange(self):
+    def onSliderChange(self, event):
         value = self.slider.get()
+        print(value)
         self.label.config(text=f"z: {value}")
 
 
