@@ -1,7 +1,7 @@
 import tkinter as tk
 
 
-class MovableCircle:
+class JoyStick:
     def __init__(self, parent):
         self.frame = tk.Frame(parent, height=200, width=150)
         self.width, self.height = 200, 200  # for canvas circles will be drawn on
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     titleLabel.grid(row=0, column=0, pady=10, padx=90, columnspan=2)
     transducersLabel = tk.Label(text='Select Transducers', font=("Arial", 15))
     transducersLabel.grid(row=3, column=0, padx=90, columnspan=2, pady=10)
-    circleWithCoordinates = MovableCircle(joystickSliderFrame)
+    circleWithCoordinates = JoyStick(joystickSliderFrame)
     slider = Slider(joystickSliderFrame)
     checkboxes = Checkboxes(checkboxesFrame)
 
