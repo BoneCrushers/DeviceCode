@@ -108,3 +108,14 @@ perfectly horizontal right side: a = 90, b = 0
 pip requirements file?
 node.js for virtual environment installer
 end user testing strategy, how would we test this
+
+Areas that need improvement:
+
+circle mechanics: see if there is a function related to this to simplify our usage, we dont want overflow (distance > 1) and the currect method to deal with this is crude
+callback on window update: tied to above, another possibility to get around this
+
+Global variables: need fixed globals for these parts
+AmbisonicsGUI: window geometry (13), dist formula scalar (85)
+GUI: Joystick Class: frame dims (7), canvas dims (8), outerRadius (13), innerCircleRadius (15) Slider: dims, SCALE(lots of 74's and 75's, each has a purpose, define separately)
+
+evaluate3D in GUI, ** to np.power()

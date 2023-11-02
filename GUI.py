@@ -1,4 +1,5 @@
 import tkinter as tk
+import numpy as np
 
 
 class JoyStick:
@@ -9,23 +10,24 @@ class JoyStick:
         self.center = (self.width / 2, self.height / 2)
         self.canvas.bind("<Button-1>", self.onMouseClickDrag)
         self.canvas.bind("<B1-Motion>", self.onMouseClickDrag)
-        self.outerRadius = 75
+        self.outerRadius = 74
         self.innerCircle = None
-        self.innerCircleRadius = 12
+        self.innerCircleRadius = 10
         self.innerCircleCoords = (0, 0)  # Initialize the inner circle at (0, 0)
         self.coordinatesLabel = tk.Label(self.frame, text=f'(x,y): ({0},{0})')
-        self.drawOuterCircle()
+        self.drawOuterCircle(self.outerRadius)
         self.drawInnerCircle()
+        self.drawOuterCircle(2)
         self.coordinatesLabel.pack(side='bottom')
         self.frame.grid(row=1, column=0, padx=10, pady=10)  # grid for joystick frame
         self.canvas.pack()
 
-    def drawOuterCircle(self):
+    def drawOuterCircle(self, outerRadius):
         self.canvas.create_oval(
-            self.center[0] - self.outerRadius,
-            self.center[1] - self.outerRadius,
-            self.center[0] + self.outerRadius,
-            self.center[1] + self.outerRadius,
+            self.center[0] - outerRadius,
+            self.center[1] - outerRadius,
+            self.center[0] + outerRadius,
+            self.center[1] + outerRadius,
             outline="black",
             width=3
         )
@@ -45,7 +47,7 @@ class JoyStick:
 
     def onMouseClickDrag(self, event):
         x, y = int(event.x - self.center[0]), int(event.y - self.center[1])
-        distance = int((x ** 2 + y ** 2) ** 0.5)
+        distance = np.sqrt(np.power(x, 2) + np.power(y, 2))
 
         # Ensure the click or drag is inside or on the outer circle
         if distance <= self.outerRadius:
@@ -61,33 +63,52 @@ class JoyStick:
         self.coordinatesLabel.config(
             # y coordinate displays opposite so reversing the sign
             text=f'(x,y): ({self.innerCircleCoords[0]},{-1 * self.innerCircleCoords[1]})')
+        
+    def getData(self):
+        return self.innerCircleCoords
+        
 
 
 class Slider:
-    def __init__(self, parent):
+    def __init__(self, parent, window):
         self.frame = tk.Frame(parent, height=175, width=175, padx=10)
         self.sliderValue = 0
-        self.slider = tk.Scale(self.frame, from_=75, to=-75, orient='vertical', length=150, showvalue=False,
+        self.slider = tk.Scale(self.frame, from_=74, to=-74, orient='vertical', length=150, showvalue=False,
                                command=self.onSliderChange)
         self.label = tk.Label(self.frame, text=f"z: {0}")
         self.slider.pack(pady=10)
         self.label.pack(pady=10)
         self.frame.grid(row=1, column=1, padx=20, pady=10)  # Place in the grid
 
+        self.window = window
+
     def onSliderChange(self, event):
-        value = self.slider.get()
-        print(value)
+        value = self.evaluate3D(self.window.circleWithCoordinates.getData())
         self.label.config(text=f"z: {value}")
+
+    def getData(self):
+        return self.slider.get()
+    
+    def evaluate3D(self, data=(0, 0)):
+        dist = (self.slider.get()**2+data[0]**2+data[1]**2)**.5
+        if(dist >= 74):
+          val = abs((74**2-data[0]**2-data[1]**2)**.5)
+          if(self.slider.get() < 0):
+              val = -val
+          self.slider.set(val)
+        return self.slider.get()
+
+
 
 
 class Checkboxes:
     def __init__(self, parent, numboxes=8):
         self.checkboxStatus = [True] * numboxes  # Initialize the checkbox statuses
-        self.checkboxes = self.createCheckboxes(parent)
+        self.checkboxes = self.createCheckboxes(parent, numboxes)
 
-    def createCheckboxes(self, parent):
+    def createCheckboxes(self, parent, numboxes):
         createdCheckboxes = []
-        for i in range(8):
+        for i in range(numboxes):
             checkboxVar = tk.BooleanVar(value=True)
             checkbox = tk.Checkbutton(parent, text=f'{i + 1}',
                                       command=lambda x=i, var=checkboxVar: self.onClick(x), variable=checkboxVar)
@@ -99,23 +120,5 @@ class Checkboxes:
         self.checkboxStatus[checkbox_index] = not self.checkboxStatus[checkbox_index]
         print(self.checkboxStatus)
 
-
-# if __name__ == '__main__':
-#     window = tk.Tk()
-#     window.geometry("400x400")
-
-#     joystickSliderFrame = tk.Frame()
-#     joystickSliderFrame.grid(row=2, column=0, columnspan=2, pady=10)
-
-#     checkboxesFrame = tk.Frame()
-#     checkboxesFrame.grid(row=4, column=0, columnspan=2, pady=10, padx=10)
-
-#     titleLabel = tk.Label(text='Ambisonics Editor', font=("Arial", 20))
-#     titleLabel.grid(row=0, column=0, pady=10, padx=90, columnspan=2)
-#     transducersLabel = tk.Label(text='Select Transducers', font=("Arial", 15))
-#     transducersLabel.grid(row=3, column=0, padx=90, columnspan=2, pady=10)
-#     circleWithCoordinates = JoyStick(joystickSliderFrame)
-#     slider = Slider(joystickSliderFrame)
-#     checkboxes = Checkboxes(checkboxesFrame)
-
-#     window.mainloop()
+    def getData(self):
+        return self.checkboxes
