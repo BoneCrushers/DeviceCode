@@ -2,7 +2,7 @@ import tkinter as tk
 
 
 class JoyStick:
-    def __init__(self, parent):
+    def __init__(self, parent: tk.Frame):
         self.frame = tk.Frame(parent, height=200, width=150)
         self.width, self.height = 200, 200  # for canvas circles will be drawn on
         self.canvas = tk.Canvas(self.frame, width=self.width, height=self.height)
@@ -26,7 +26,7 @@ class JoyStick:
             self.center[1] - self.outerRadius,
             self.center[0] + self.outerRadius,
             self.center[1] + self.outerRadius,
-            outline="black",
+            outline="#4F2683",
             width=3
         )
 
@@ -39,8 +39,8 @@ class JoyStick:
             self.center[1] + y - self.innerCircleRadius,
             self.center[0] + x + self.innerCircleRadius,
             self.center[1] + y + self.innerCircleRadius,
-            outline="black",
-            fill="black",
+            outline="#4F2683",
+            fill="#4F2683",
         )
 
     def onMouseClickDrag(self, event):
@@ -64,11 +64,11 @@ class JoyStick:
 
 
 class Slider:
-    def __init__(self, parent):
+    def __init__(self, parent:tk.Frame):
         self.frame = tk.Frame(parent, height=175, width=175, padx=10)
         self.sliderValue = 0
         self.slider = tk.Scale(self.frame, from_=75, to=-75, orient='vertical', length=150, showvalue=False,
-                               command=self.onSliderChange)
+                               command=self.onSliderChange,bg="#4F2683")
         self.label = tk.Label(self.frame, text=f"z: {0}")
         self.slider.pack(pady=10)
         self.label.pack(pady=10)
@@ -76,7 +76,6 @@ class Slider:
 
     def onSliderChange(self, event):
         value = self.slider.get()
-        print(value)
         self.label.config(text=f"z: {value}")
 
 
@@ -100,7 +99,7 @@ class Checkboxes:
         print(self.checkboxStatus)
 
 
-if __name__ == '__main__':
+def openWindow():
     window = tk.Tk()
     window.geometry("400x400")
 
@@ -114,8 +113,10 @@ if __name__ == '__main__':
     titleLabel.grid(row=0, column=0, pady=10, padx=90, columnspan=2)
     transducersLabel = tk.Label(text='Select Transducers', font=("Arial", 15))
     transducersLabel.grid(row=3, column=0, padx=90, columnspan=2, pady=10)
-    circleWithCoordinates = JoyStick(joystickSliderFrame)
-    slider = Slider(joystickSliderFrame)
-    checkboxes = Checkboxes(checkboxesFrame)
+    JoyStick(joystickSliderFrame)
+    Slider(joystickSliderFrame)
+    Checkboxes(checkboxesFrame)
 
     window.mainloop()
+    
+openWindow()
