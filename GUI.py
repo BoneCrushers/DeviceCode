@@ -3,7 +3,7 @@ import numpy as np
 
 
 class JoyStick:
-    def __init__(self, parent):
+    def __init__(self, parent, window):
         self.frame = tk.Frame(parent, height=200, width=150)
         self.width, self.height = 200, 200  # for canvas circles will be drawn on
         self.canvas = tk.Canvas(self.frame, width=self.width, height=self.height)
@@ -21,6 +21,7 @@ class JoyStick:
         self.coordinatesLabel.pack(side='bottom')
         self.frame.grid(row=1, column=0, padx=10, pady=10)  # grid for joystick frame
         self.canvas.pack()
+        self.window = window
 
     def drawOuterCircle(self, outerRadius):
         self.canvas.create_oval(
@@ -64,8 +65,18 @@ class JoyStick:
             # y coordinate displays opposite so reversing the sign
             text=f'(x,y): ({self.innerCircleCoords[0]},{-1 * self.innerCircleCoords[1]})')
         
+        self.evaluate3D(self.window.slider, (x, y, self.window.slider.getData()))
+        
     def getData(self):
         return self.innerCircleCoords
+    
+    def evaluate3D(self, slider, data=(0, 0, 0)):
+        # dist = np.sqrt(np.power(data[0], 2)+np.power(data[1], 2)+np.power(data[2], 2))
+        # if(dist >= 75):
+        #   val = int(abs(np.sqrt(5625- np.power(data[0], 2)- np.power(data[1], 2))))
+        #   if(slider.getData() < 0):
+        #       val = -val
+          slider.onSliderChange(None)
         
 
 
@@ -83,20 +94,25 @@ class Slider:
         self.window = window
 
     def onSliderChange(self, event):
-        value = self.evaluate3D(self.window.circleWithCoordinates.getData())
+        temp = self.window.circleWithCoordinates.getData()
+        value = self.evaluate3D(self.slider, (temp[0], temp[1], self.slider.get()))
         self.label.config(text=f"z: {value}")
 
     def getData(self):
         return self.slider.get()
     
-    def evaluate3D(self, data=(0, 0)):
-        dist = (self.slider.get()**2+data[0]**2+data[1]**2)**.5
-        if(dist >= 74):
-          val = abs((74**2-data[0]**2-data[1]**2)**.5)
+    def setData(self, value):
+        self.slider.set(value)
+        self.onSliderChange(None)
+    
+    def evaluate3D(self, slider, data=(0, 0, 0)):
+        dist = np.sqrt(np.power(data[0], 2)+np.power(data[1], 2)+np.power(data[2], 2))
+        if(dist >= 75):
+          val = int(abs(np.sqrt(5476- np.power(data[0], 2)- np.power(data[1], 2))))
           if(self.slider.get() < 0):
               val = -val
-          self.slider.set(val)
-        return self.slider.get()
+          slider.set(val)
+        return slider.get()
 
 
 

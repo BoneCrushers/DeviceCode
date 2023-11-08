@@ -11,43 +11,48 @@ import traceback
 
 
 class PlayAmbisonics():
-    def __init__(self, fileName, speakerData, ambvolume=.1, speed=1):
-        wav_file = os.getcwd()+"\\SoundFiles\\"+   fileName
-        amb = open(wav_file, 'rb')
-        self.fileHeader = amb.read(16)
-        self.ambFileData= self.fileHeader+amb.read(int.from_bytes(self.fileHeader[4:8], byteorder='little', signed=False)-16)
-        amb.close()
+    # def __init__(self, fileName, speakerData, ambvolume=.1, speed=1):
+    #     wav_file = os.getcwd()+"\\SoundFiles\\"+   fileName
+    #     amb = open(wav_file, 'rb')
+    #     self.fileHeader = amb.read(16)
+    #     self.ambFileData= self.fileHeader+amb.read(int.from_bytes(self.fileHeader[4:8], byteorder='little', signed=False)-16)
+    #     amb.close()
         
 
-        self.OUTPUT_CHANNEL_COUNT = 8
-        self.AMBISONICS_INPUT_CHANNEL_COUNT = 4
-        self.SPEAKER_INFORMATION = []
-        self.updateSpeakerInformation(speakerData)
-        self.speakerList = []
-        self.updateSpeakerList(speakerData)
+    #     self.OUTPUT_CHANNEL_COUNT = 8
+    #     self.AMBISONICS_INPUT_CHANNEL_COUNT = 4
+    #     self.SPEAKER_INFORMATION = []
+    #     self.updateSpeakerInformation(speakerData)
+    #     self.speakerList = []
+    #     self.updateSpeakerList(speakerData)
 
-        formatString = '4sL4s4sLHHLLHH4s'
-        """
-        File (RIFF), File Size, File type (WAVE), Format chunk marker(fmt ),
-        Length of format Data, Format Type, # Channels, Sample Rate, bits/sec,
-        idk what the use here is, bits/sample, DATA header *OR* Subformat Data/Metadata
-        """
-        self.unpackedHeader = struct.unpack(formatString, self.ambFileData[0:struct.calcsize(formatString)])
-        self.IN_CHANNEL_COUNT = self.unpackedHeader[6]
-        self.FRAME_SIZE_IN_BYTES = self.unpackedHeader[9]
-        self.FRAME_RATE = self.unpackedHeader[7]
-        self.ambFileCurPosition = [self.ambFileData.find(b'data')+4]
+    #     formatString = '4sL4s4sLHHLLHH4s'
+    #     """
+    #     File (RIFF), File Size, File type (WAVE), Format chunk marker(fmt ),
+    #     Length of format Data, Format Type, # Channels, Sample Rate, bits/sec,
+    #     idk what the use here is, bits/sample, DATA header *OR* Subformat Data/Metadata
+    #     """
+    #     self.unpackedHeader = struct.unpack(formatString, self.ambFileData[0:struct.calcsize(formatString)])
+    #     self.IN_CHANNEL_COUNT = self.unpackedHeader[6]
+    #     self.FRAME_SIZE_IN_BYTES = self.unpackedHeader[9]
+    #     self.FRAME_RATE = self.unpackedHeader[7]
+    #     self.ambFileCurPosition = [self.ambFileData.find(b'data')+4]
 
-        self.normalizationMultiplier = [np.float64(ambvolume)]
-        self.speed = speed
+    #     self.normalizationMultiplier = [np.float64(ambvolume)]
+    #     self.speed = speed
 
-        # Initialize PyAudio
-        self.p = pyaudio.PyAudio()
+    #     # Initialize PyAudio
+    #     self.p = pyaudio.PyAudio()
 
     
-    def __init__(self, window, speakerData, fileName="Center.wav", ambvolume=.1, speed=1):
+    def __init__(self, window, speakerData, fileName="Center.wav", ambvolume=.25, speed=1):
         """
         For use through a window.
+        :window: AmbisonicsGUI object containing this object
+        :speakerData: list or tuple of 4 item lists holding data for the speaker. 
+            Each entry in the list should look like: [theta, zenith, speaker constant, data line]
+
+
         """
         wav_file = os.getcwd()+"\\SoundFiles\\"+   fileName
         amb = open(wav_file, 'rb')
@@ -62,20 +67,24 @@ class PlayAmbisonics():
         idk what the use here is, bits/sample, DATA header *OR* Subformat Data/Metadata
         """
         self.unpackedHeader = struct.unpack(formatString, self.ambFileData[0:struct.calcsize(formatString)])
+
+        assert(self.unpackedHeader[0] == b'RIFF' and self.unpackedHeader[2] == b'WAVE')
+
         self.IN_CHANNEL_COUNT = self.unpackedHeader[6]
         self.FRAME_SIZE_IN_BYTES = self.unpackedHeader[9]
         self.FRAME_RATE = self.unpackedHeader[7]
         self.ambFileCurPosition = self.ambFileData.find(b'data')+4
-        self.ambFileStartPosition = self.ambFileData.find(b'data')+4
+        self.ambFileStartPosition = self.ambFileCurPosition
         self.ambFileEndPosition = int.from_bytes(self.fileHeader[4:8], byteorder='little', signed=False)
 
+        assert(self.IN_CHANNEL_COUNT == 1 or self.IN_CHANNEL_COUNT==4)
 
         self.OUTPUT_CHANNEL_COUNT=8
         self.AMBISONICS_INPUT_CHANNEL_COUNT = 4
         self.SPEAKER_INFORMATION = []
         self.updateSpeakerInformation(speakerData)
         self.speakerList = []
-        self.updateSpeakerList(speakerData)
+        self.updateSpeakerList()
 
         self.window = window
         self.soundLocationData = self.window.getAngleData()
@@ -83,27 +92,34 @@ class PlayAmbisonics():
         self.normalizationMultiplier = [np.float64(ambvolume)]
         self.speed = speed
 
+        #Channel Mask
+        self.wChannel = 2
+        self.xChannel = 1
+        self.yChannel = 3
+        self.zChannel = 0
+
         # Initialize PyAudio
         self.p = pyaudio.PyAudio()
         
 
-
+    def setvolume(self, value):
+        self.normalizationMultiplier[0] = np.float64(value)
     
     def getNextData(self, FileData: str, size, movePointer=True):
         """
         Gets the next 'size' bytes of data, converting them into np.int16
-        :FileData: stream of data
-        :return: np.ndarray
+        :FileData: string of data
+        :size: number of bytes to grab
+        :return: np.ndarray(dtype=np.int16)
         """
         if(movePointer): self.ambFileCurPosition += size
         temp = np.frombuffer(FileData[self.ambFileCurPosition-size:self.ambFileCurPosition], dtype=np.int16)
         if(self.IN_CHANNEL_COUNT == 1):
             return self.placeMonoAudio(temp)
-        else:
-            return temp
+        return temp
     
     #FINISH
-    def updateSpeakerList(self, data):
+    def updateSpeakerList(self):
         """
         input is list of 3 or 0 item lists, 0 is no speaker, format [theta, zenith, coefficient]
         Updates the each speaker's sin/cos for use in calculation phase during playback
@@ -112,14 +128,20 @@ class PlayAmbisonics():
         self.speakerList = [[],[],[],[],[],[],[],[]]
         for i in range(len(self.SPEAKER_INFORMATION)):
             if len(self.SPEAKER_INFORMATION[i]) == 3:
-                self.speakerList[i] = [np.sin(self.SPEAKER_INFORMATION[i][0]), np.cos(self.SPEAKER_INFORMATION[i][0]), np.sin(self.SPEAKER_INFORMATION[i][1]), np.cos(self.SPEAKER_INFORMATION[i][1]), self.SPEAKER_INFORMATION[i][2]]
+                self.speakerList[i] = [
+                    (np.sin(self.SPEAKER_INFORMATION[i][0])+1)/2,
+                    (np.cos(self.SPEAKER_INFORMATION[i][0])+1)/2,
+                    (np.sin(self.SPEAKER_INFORMATION[i][1])+1)/2,
+                    (np.cos(self.SPEAKER_INFORMATION[i][1])+1)/2,
+                    self.SPEAKER_INFORMATION[i][2]]
             else:
                 self.speakerList[i] = []
                 # self.get #WHAT IS LINE HERE FOR?
     #FINISH?
     def updateSpeakerInformation(self, data):
         """
-        Format: [Theta angle(rad), Zenith angle(rad), SpeakerConstant, Data Line (0-7)] for EACH SPEAKER
+        :data: [Theta angle(rad), Zenith angle(rad), SpeakerConstant, Data Line (0-7)] for EACH SPEAKER
+        :return: None
         """
         self.SPEAKER_INFORMATION = [[],[],[],[],[],[],[],[]]
         for d in data:
@@ -136,6 +158,7 @@ class PlayAmbisonics():
     def updateSoundLocationData(self):
         """
         Updates location data from window's current data
+        :return: np.1Darray(dtype=np.int16)
         """
         self.soundLocationData = self.window.getAngleData()
 
@@ -145,15 +168,17 @@ class PlayAmbisonics():
         arrT = arr.T
         
         arrT[0] = formattedData
-        arrT[1] = np.cos(self.soundLocationData[0])*formattedData*self.soundLocationData[2]
-        arrT[2] = np.sin(self.soundLocationData[0])*formattedData*self.soundLocationData[2]
-        arrT[3] = np.sin(self.soundLocationData[1])*formattedData*self.soundLocationData[2]
+        arrT[1] = np.cos(self.soundLocationData[0])*formattedData*(1-self.soundLocationData[2])
+        arrT[2] = np.sin(self.soundLocationData[0])*formattedData*(1-self.soundLocationData[2])
+        arrT[3] = np.sin(self.soundLocationData[1])*formattedData*(1-self.soundLocationData[2])
         return arr.flatten()
         
     
     def audioCallbackAmbisonics(self, inData, frameCount, timeInfo, status):
-        #TEST
-        print("called", self.ambFileCurPosition)
+        """
+        Called by stream on data request
+        :return: bytes
+        """
         AD = self.getNextData(self.ambFileData, frameCount*self.FRAME_SIZE_IN_BYTES)
         AD = np.ndarray((int(len(AD)/self.AMBISONICS_INPUT_CHANNEL_COUNT), self.AMBISONICS_INPUT_CHANNEL_COUNT), dtype=AD.dtype, buffer=AD)
         audioData = AD.T
@@ -161,28 +186,37 @@ class PlayAmbisonics():
         RD = np.zeros((int(len(audioData[0])), self.OUTPUT_CHANNEL_COUNT), dtype=np.int16)
         returnData = RD.T 
         
+        self.ambisonicCalculations(returnData, audioData)
+        """
+        Notes:
+        the clipping is only on one side, I believe it was when values were negative.
+        When the same audio signal was played on the opposite side (ie the values switched from 
+        positive to negative and we swap between clipping and no clipping.)
+        ***look in to order and possible data cutting during conversion?***
+        """
+        bytesData = RD.tobytes()
+        if(len(bytesData) < frameCount*self.OUTPUT_CHANNEL_COUNT*2):
+            self.window.queueList.append(AmbisonicsGUI.QueueObject(obj=self.window, func=AmbisonicsGUI.AmbisonicsGUI.playSound))
+        return bytesData, pyaudio.paContinue
+    
+    def ambisonicCalculations(self, returnData, audioData):
+        """
+        :returnData: np.ndarray, storage for calculated values, edits array
+        :audioData: np.ndarray, ambisonics B format input values
+        """
         #AudioData = [Z, X, W, Y]? What is up with this order?
         #SpeakerList[i] = [sin(azimuth), cos(azimuth), sin(zenith), cos(zenith)]
         # sin(A)*y, cos(A)*x, sin(z)*z
         for i in range(self.OUTPUT_CHANNEL_COUNT):
             if(len(self.speakerList[i]) != 0):
                 returnData[i] = self.speakerList[i][4]*(
-                    audioData[2] + 
-                    self.speakerList[i][0]*audioData[3] + 
-                    self.speakerList[i][1]*audioData[1] + 
-                    self.speakerList[i][2]*audioData[0]   
+                    audioData[self.wChannel] + 
+                    self.speakerList[i][0]*audioData[self.xChannel] + 
+                    self.speakerList[i][1]*audioData[self.yChannel] + 
+                    self.speakerList[i][2]*audioData[self.zChannel]   
                     )*self.normalizationMultiplier[0]
             else:
                 returnData[i] = 0
-            """
-            Notes:
-            the clipping is only on one side, I believe it was when values were negative.
-            When the same audio signal was played on the opposite side (ie the values switched from 
-            positive to negative and we swap between clipping and no clipping.)
-            ***look in to order and possible data cutting during conversion?***
-            """
-        return RD.tobytes(), pyaudio.paContinue
-            
 
     
     # def audioNormalizationAmbisonics(self, wVals, volume):
@@ -201,8 +235,10 @@ class PlayAmbisonics():
     #     return
 
     def startAudioChannel(self, speed=1):
-        #TEST
-        print(self.ambFileStartPosition, self.ambFileCurPosition)
+        """
+        :speed: float
+        :return: None
+        """
         self.stream = self.p.open(format=8, #paInt16 = 8 
                         channels=self.OUTPUT_CHANNEL_COUNT,
                         rate=int(self.FRAME_RATE * speed),
@@ -215,8 +251,11 @@ class PlayAmbisonics():
         self.stream.start_stream()
 
     def stopAudioChannel(self):
+        """
+        :return: None
+        """
         self.ambFileCurPosition = self.ambFileEndPosition
-        self.stream.stop_stream()
+        # self.stream.stop_stream()
         self.stream.close()
 
         #TEST
@@ -226,9 +265,15 @@ class PlayAmbisonics():
     
 
 class AmbisonicsError(Exception):
-    def __init__(self, message):
+    def __init__(self, message=""):
+        """
+        :message: Console output message on error
+        """
         super().__init__(message)
 
 class AmbEndOfFileError(Exception):
-    def __init__(self, message=None):
+    def __init__(self, message=""):
+        """
+        :message: Console output message on error
+        """
         super().__init__(message)
