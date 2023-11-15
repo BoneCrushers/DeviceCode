@@ -71,11 +71,6 @@ class JoyStick:
         return self.innerCircleCoords
 
     def evaluate3D(self, slider, data=(0, 0, 0)):
-        # dist = np.sqrt(np.power(data[0], 2)+np.power(data[1], 2)+np.power(data[2], 2))
-        # if(dist >= 75):
-        #   val = int(abs(np.sqrt(5625- np.power(data[0], 2)- np.power(data[1], 2))))
-        #   if(slider.getData() < 0):
-        #       val = -val
         slider.onSliderChange(None)
 
 
@@ -113,11 +108,38 @@ class Slider:
             slider.set(val)
         return slider.get()
 
+class VolumeSlider:
+    def __init__(self, parent, window):
+        self.frame = tk.Frame(parent, height=175, width=175, padx=10)
+        self.volume = 25
+        
+        self.label = tk.Label(self.frame, text=f"Volume: {self.volume}")
+        self.slider = tk.Scale(self.frame, from_=100, to=0, orient='vertical', length=150, showvalue=False,
+                               command=self.onChange)
+        self.slider.pack(pady=10)
+        self.label.pack(pady=10)
+        self.frame.grid(row=1, column=1, padx=20, pady=10)  # Place in the grid
+
+        self.window = window
+
+        
+    def onChange(self, event):
+        self.volume = self.slider.get()
+        self.label.config(text=f"Volume: {self.volume}")
+        self.window.AmbisonicsObj.setVolume(self.volume/100)
+    
+    def getVolume(self):
+        return self.volume
+    
+    def setVolume(self, vol):
+        self.volume = vol
+        
 
 class Checkboxes:
-    def __init__(self, parent, numboxes=8):
+    def __init__(self, parent, window, numboxes=8):
         self.checkboxStatus = [True] * numboxes  # Initialize the checkbox statuses
         self.checkboxes = self.createCheckboxes(parent, numboxes)
+        self.window = window
 
     def createCheckboxes(self, parent, numboxes):
         createdCheckboxes = []
@@ -131,7 +153,14 @@ class Checkboxes:
 
     def onClick(self, checkbox_index):
         self.checkboxStatus[checkbox_index] = not self.checkboxStatus[checkbox_index]
-        print(self.checkboxStatus)
+        temp = self.window.speakerData
+        for i in temp:
+            if(self.checkboxStatus[i[2]]):
+                i[3] = 1
+            else:
+                i[3] = 0
+        self.window.setSpeakerInformation(temp)
+        
 
     def getData(self):
         return self.checkboxes

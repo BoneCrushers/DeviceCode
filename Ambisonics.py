@@ -6,46 +6,15 @@ import AmbisonicsGUI
 
 
 class PlayAmbisonics():
-    # def __init__(self, fileName, speakerData, ambvolume=.1, speed=1): wav_file = os.getcwd()+"\\SoundFiles\\"+
-    # fileName amb = open(wav_file, 'rb') self.fileHeader = amb.read(16) self.ambFileData= self.fileHeader+amb.read(
-    # int.from_bytes(self.fileHeader[4:8], byteorder='little', signed=False)-16) amb.close()
-
-    #     self.OUTPUT_CHANNEL_COUNT = 8
-    #     self.AMBISONICS_INPUT_CHANNEL_COUNT = 4
-    #     self.SPEAKER_INFORMATION = []
-    #     self.updateSpeakerInformation(speakerData)
-    #     self.speakerList = []
-    #     self.updateSpeakerList(speakerData)
-
-    #     formatString = '4sL4s4sLHHLLHH4s'
-    #     """
-    #     File (RIFF), File Size, File type (WAVE), Format chunk marker(fmt ),
-    #     Length of format Data, Format Type, # Channels, Sample Rate, bits/sec,
-    #     idk what the use here is, bits/sample, DATA header *OR* Subformat Data/Metadata
-    #     """
-    #     self.unpackedHeader = struct.unpack(formatString, self.ambFileData[0:struct.calcsize(formatString)])
-    #     self.IN_CHANNEL_COUNT = self.unpackedHeader[6]
-    #     self.FRAME_SIZE_IN_BYTES = self.unpackedHeader[9]
-    #     self.FRAME_RATE = self.unpackedHeader[7]
-    #     self.ambFileCurPosition = [self.ambFileData.find(b'data')+4]
-
-    #     self.normalizationMultiplier = [np.float64(ambvolume)]
-    #     self.speed = speed
-
-    #     # Initialize PyAudio
-    #     self.p = pyaudio.PyAudio()
-
     def __init__(self, window, speakerData, fileName="Center.wav", ambvolume=.25, speed=1):
         """
         For use through a window.
         :window: AmbisonicsGUI object containing this object
         :speakerData: list or tuple of 4 item lists holding data for the speaker. 
             Each entry in the list should look like: [theta, zenith, speaker constant, data line]
-
-
         """
         self.stream = None
-        wav_file = os.getcwd() + "\\SoundFiles\\" + fileName
+        wav_file = fileName
         amb = open(wav_file, 'rb')
         self.fileHeader = amb.read(16)
         self.ambFileData = self.fileHeader + amb.read(
@@ -93,8 +62,8 @@ class PlayAmbisonics():
         # Initialize PyAudio
         self.p = pyaudio.PyAudio()
 
-    def setvolume(self, value):
-        self.normalizationMultiplier[0] = np.float64(value)
+    def setVolume(self, value):
+        self.normalizationMultiplier = np.float64(value)
 
     def getNextData(self, FileData: str, size, movePointer=True):
         """
@@ -118,19 +87,14 @@ class PlayAmbisonics():
         """
         self.speakerList = [[], [], [], [], [], [], [], []]
         for i in range(len(self.SPEAKER_INFORMATION)):
-            if len(self.SPEAKER_INFORMATION[i]) == 3:
-                # self.speakerList[i] = [
-                #     (np.sin(self.SPEAKER_INFORMATION[i][0]) + 1) / 2,
-                #     (np.cos(self.SPEAKER_INFORMATION[i][0]) + 1) / 2,
-                #     (np.sin(self.SPEAKER_INFORMATION[i][1]) + 1) / 2,
-                #     (np.cos(self.SPEAKER_INFORMATION[i][1]) + 1) / 2,
-                #     self.SPEAKER_INFORMATION[i][2]]
+            if len(self.SPEAKER_INFORMATION[i]) == 4:
                 self.speakerList[i] = [
                     np.cos(self.SPEAKER_INFORMATION[i][0]),
                     np.sin(self.SPEAKER_INFORMATION[i][0]),
                     np.cos(self.SPEAKER_INFORMATION[i][1]),
                     np.sin(self.SPEAKER_INFORMATION[i][1]),
-                    self.SPEAKER_INFORMATION[i][2]]
+                    self.SPEAKER_INFORMATION[i][2],
+                    self.SPEAKER_INFORMATION[i][3]]
             else:
                 self.speakerList[i] = []
                 # self.get #WHAT IS LINE HERE FOR?
@@ -138,22 +102,20 @@ class PlayAmbisonics():
     # FINISH?
     def updateSpeakerInformation(self, data):
         """
-        :data: [Theta angle(rad), Zenith angle(rad), SpeakerConstant, Data Line (0-7)] for EACH SPEAKER
+        :data: [Theta angle(rad), Zenith angle(rad), SpeakerConstant, on/off, Data Line (0-7)] for EACH SPEAKER
         :return: None
         """
         self.SPEAKER_INFORMATION = [[], [], [], [], [], [], [], []]
         for d in data:
-            if len(d) == 4:
-                if len(self.SPEAKER_INFORMATION[d[3]]) != 0:
+            if len(d) == 5:
+                if len(self.SPEAKER_INFORMATION[d[4]]) != 0:
                     raise AmbisonicsError("Cannot have multiple speakers on the same line.")
-                elif d[3] > 7 or d[3] < 0:
+                elif d[4] > 7 or d[4] < 0:
                     raise AmbisonicsError("Datalines must be between 0 and 7.")
                 else:
-                    self.SPEAKER_INFORMATION[d[3]] = d[0:3]
+                    self.SPEAKER_INFORMATION[d[4]] = d[0:4]
             else:
-                raise AmbisonicsError(
-                    "All Speakers must have 4 pieces of data: [Theta angle(rads), Zenith angle(rads), "
-                    "SpeakerConstant, Data Line (0-7)]")
+                raise AmbisonicsError("All Speakers must have 5 pieces of data: [Theta angle(rads), Zenith angle(rads), SpeakerConstant, on/off, Data Line (0-7)]")
 
     def updateSoundLocationData(self):
         """
@@ -167,7 +129,8 @@ class PlayAmbisonics():
         Takes a mono audio signal and converts it into a 4 Channel Amb.B format
         using the sound location data from the parent window.
         :data: array-like, contains mono audio samples
-        :return: np.1DArray(dtype=np.int16)"""
+        :return: np.1DArray(dtype=np.int16)
+        """
         formattedData = np.frombuffer(data, dtype=np.int16)
         arr = np.ndarray((len(formattedData), 4), dtype=np.int16)
         arrT = arr.T
@@ -183,6 +146,7 @@ class PlayAmbisonics():
         Called by stream on data request
         :return: bytes
         """
+        
         AD = self.getNextData(self.ambFileData, frameCount * self.FRAME_SIZE_IN_BYTES)
         AD = np.ndarray((int(len(AD) / self.AMBISONICS_INPUT_CHANNEL_COUNT), self.AMBISONICS_INPUT_CHANNEL_COUNT),
                         dtype=AD.dtype, buffer=AD)
@@ -216,11 +180,11 @@ class PlayAmbisonics():
         :return: None
         """
         # AudioData = [Z, X, W, Y]? What is up with this order?
-        # SpeakerList[i] = [sin(theta), cos(theta), sin(zenith), cos(zenith)]
+        # SpeakerList[i] = [sin(theta), cos(theta), sin(zenith), cos(zenith), speaker constant, on/off]
         # sin(A)*y, cos(A)*x, sin(z)*z
         for i in range(self.OUTPUT_CHANNEL_COUNT):
             if len(self.speakerList[i]) != 0:
-                returnData[i] = self.speakerList[i][4] * (
+                returnData[i] = self.speakerList[i][4] * self.speakerList[i][5]* (
                         audioData[self.wChannel] +
                         self.speakerList[i][0] * audioData[self.xChannel] +
                         self.speakerList[i][1] * audioData[self.yChannel] +
