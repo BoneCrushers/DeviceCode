@@ -64,20 +64,19 @@ class JoyStick:
         self.coordinatesLabel.config(
             # y coordinate displays opposite so reversing the sign
             text=f'(x,y): ({self.innerCircleCoords[0]},{-1 * self.innerCircleCoords[1]})')
-        
+
         self.evaluate3D(self.window.slider, (x, y, self.window.slider.getData()))
-        
+
     def getData(self):
         return self.innerCircleCoords
-    
+
     def evaluate3D(self, slider, data=(0, 0, 0)):
         # dist = np.sqrt(np.power(data[0], 2)+np.power(data[1], 2)+np.power(data[2], 2))
         # if(dist >= 75):
         #   val = int(abs(np.sqrt(5625- np.power(data[0], 2)- np.power(data[1], 2))))
         #   if(slider.getData() < 0):
         #       val = -val
-          slider.onSliderChange(None)
-        
+        slider.onSliderChange(None)
 
 
 class Slider:
@@ -100,21 +99,19 @@ class Slider:
 
     def getData(self):
         return self.slider.get()
-    
+
     def setData(self, value):
         self.slider.set(value)
         self.onSliderChange(None)
-    
+
     def evaluate3D(self, slider, data=(0, 0, 0)):
-        dist = np.sqrt(np.power(data[0], 2)+np.power(data[1], 2)+np.power(data[2], 2))
-        if(dist >= 75):
-          val = int(abs(np.sqrt(5476- np.power(data[0], 2)- np.power(data[1], 2))))
-          if(self.slider.get() < 0):
-              val = -val
-          slider.set(val)
+        dist = np.sqrt(np.power(data[0], 2) + np.power(data[1], 2) + np.power(data[2], 2))
+        if dist >= 75:
+            val = int(abs(np.sqrt(5476 - np.power(data[0], 2) - np.power(data[1], 2))))
+            if self.slider.get() < 0:
+                val = -val
+            slider.set(val)
         return slider.get()
-
-
 
 
 class Checkboxes:
