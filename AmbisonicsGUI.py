@@ -8,9 +8,10 @@ import Ambisonics
 
     
 class AmbisonicsGUI:
-    def __init__(self):
+    def __init__(self, speakerData, width=500, height=500):
+
         self.window = tk.Tk()
-        self.window.geometry("500x500")
+        self.window.geometry("{}x{}".format(width, height))
         self.playButton = tk.ttk.Button(self.window, text="Play", command=self.playSound).grid(row=5, column=1, padx=0, pady=0)
         
         joystickSliderFrame = tk.Frame()
@@ -29,7 +30,7 @@ class AmbisonicsGUI:
 
         self.angleData = 0
         self.audioInProgress = False
-        self.AmbisonicsObj = Ambisonics.PlayAmbisonics(window=self, speakerData=[[np.pi/4, 0, 1, 0]], fileName="CenterMONO.wav")
+        self.AmbisonicsObj = Ambisonics.PlayAmbisonics(window=self, speakerData=speakerData, fileName="CenterMONO.wav")
 
         self.queueList = []
 
@@ -59,8 +60,10 @@ class AmbisonicsGUI:
                 if(temp != self.angleData):
                     self.angleData = temp
                     #TEST
-                    print(round(temp[0], 3), round(temp[1], 3), round(temp[2], 3))
+                    # print(round(temp[0], 3), round(temp[1], 3), round(temp[2], 3))
                     self.AmbisonicsObj.updateSoundLocationData()
+                    #TEST
+                    print(self.AmbisonicsObj.speakerList)
                 #TEST
                 if(self.Permaplay and not self.audioInProgress):
                     self.playSound()
@@ -95,11 +98,11 @@ class AmbisonicsGUI:
         if((data[0], data[1]) == (0, 0)):
             theta = 0.0
         else:
-            theta = (-1*np.arctan2(data[1], data[0]) - np.pi/2) % (2*np.pi)
+            theta = (-1*np.arctan2(data[1], data[0]) - np.pi/2)
         if((data[1], data[2]) == (0, 0)):
             zenith = 0.0
         else:
-            zenith = (-1*np.arctan2(data[2], data[1]) + np.pi) % (2*np.pi)
+            zenith = (-1*np.arctan2(data[2], data[1]) + np.pi)
         dist = (np.sqrt(np.power(data[0], 2) + np.power(data[1], 2) + np.power(data[2], 2)))/75
 
         #TEST SQUARE DIST

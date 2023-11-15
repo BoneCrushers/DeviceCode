@@ -89,21 +89,24 @@ class PlayAmbisonics():
         self.window = window
         self.soundLocationData = self.window.getAngleData()
 
-        self.normalizationMultiplier = [np.float64(ambvolume)]
+        self.normalizationMultiplier = np.float64(ambvolume)
         self.speed = speed
 
         #Channel Mask
-        self.wChannel = 2
+        self.wChannel = 0
         self.xChannel = 1
-        self.yChannel = 3
-        self.zChannel = 0
+        self.yChannel = 2
+        self.zChannel = 3
 
         # Initialize PyAudio
         self.p = pyaudio.PyAudio()
         
 
     def setvolume(self, value):
-        self.normalizationMultiplier[0] = np.float64(value)
+        """
+        :value: volume, scale from 0-1 where 0 is mute
+        """
+        self.normalizationMultiplier = np.float64(value)
     
     def getNextData(self, FileData: str, size, movePointer=True):
         """
@@ -128,15 +131,23 @@ class PlayAmbisonics():
         self.speakerList = [[],[],[],[],[],[],[],[]]
         for i in range(len(self.SPEAKER_INFORMATION)):
             if len(self.SPEAKER_INFORMATION[i]) == 3:
-                self.speakerList[i] = [
-                    (np.sin(self.SPEAKER_INFORMATION[i][0])+1)/2,
-                    (np.cos(self.SPEAKER_INFORMATION[i][0])+1)/2,
-                    (np.sin(self.SPEAKER_INFORMATION[i][1])+1)/2,
-                    (np.cos(self.SPEAKER_INFORMATION[i][1])+1)/2,
-                    self.SPEAKER_INFORMATION[i][2]]
+                # self.speakerList[i]=[
+                #                     (np.sin(self.SPEAKER_INFORMATION[i][0])+1)/2.,
+                #                     (np.cos(self.SPEAKER_INFORMATION[i][0])+1)/2.,
+                #                     (np.sin(self.SPEAKER_INFORMATION[i][1])+1)/2.,
+                #                     (np.cos(self.SPEAKER_INFORMATION[i][1])+1)/2.,
+                #                     self.SPEAKER_INFORMATION[i][2]
+                #                     ]
+                self.speakerList[i]=[
+                                    np.cos(self.SPEAKER_INFORMATION[i][0]),
+                                    np.sin(self.SPEAKER_INFORMATION[i][0]),
+                                    np.cos(self.SPEAKER_INFORMATION[i][1]),
+                                    np.sin(self.SPEAKER_INFORMATION[i][1]),
+                                    self.SPEAKER_INFORMATION[i][2]
+                                    ]
             else:
                 self.speakerList[i] = []
-                # self.get #WHAT IS LINE HERE FOR?
+                # self.get #WHAT IS LINE HERE FOR? I had a purpose but memory betrays me...
     #FINISH?
     def updateSpeakerInformation(self, data):
         """
@@ -158,19 +169,24 @@ class PlayAmbisonics():
     def updateSoundLocationData(self):
         """
         Updates location data from window's current data
-        :return: np.1Darray(dtype=np.int16)
+        :return: None
         """
         self.soundLocationData = self.window.getAngleData()
 
     def placeMonoAudio(self, data):
+        """
+        Takes a mono audio signal and converts it into a 4 Channel Amb.B format
+        using the sound location data from the parent window.
+        :data: array-like, contains mono audio samples
+        :return: np.1DArray(dtype=np.int16)"""
         formattedData = np.frombuffer(data, dtype=np.int16)
         arr = np.ndarray((len(formattedData), 4), dtype=np.int16)
         arrT = arr.T
         
         arrT[0] = formattedData
-        arrT[1] = np.cos(self.soundLocationData[0])*formattedData*(1-self.soundLocationData[2])
-        arrT[2] = np.sin(self.soundLocationData[0])*formattedData*(1-self.soundLocationData[2])
-        arrT[3] = np.sin(self.soundLocationData[1])*formattedData*(1-self.soundLocationData[2])
+        arrT[1] = np.cos(self.soundLocationData[0])*formattedData #*(1-self.soundLocationData[2])
+        arrT[2] = np.sin(self.soundLocationData[0])*formattedData #*(1-self.soundLocationData[2])
+        arrT[3] = np.sin(self.soundLocationData[1])*formattedData #*(1-self.soundLocationData[2])
         return arr.flatten()
         
     
@@ -194,6 +210,10 @@ class PlayAmbisonics():
         positive to negative and we swap between clipping and no clipping.)
         ***look in to order and possible data cutting during conversion?***
         """
+
+        #TEST
+        print("Audio Data:", AD[0], "    Return Data:", RD[0][0], "   Sound Data: [", round(self.speakerList[0][0], 3), round(self.speakerList[0][1], 3), round(self.speakerList[0][2], 3), round(self.speakerList[0][4], 3), "]   Location: [", round(self.soundLocationData[0], 3), round(self.soundLocationData[1], 3), round(self.soundLocationData[2], 3), "]")
+
         bytesData = RD.tobytes()
         if(len(bytesData) < frameCount*self.OUTPUT_CHANNEL_COUNT*2):
             self.window.queueList.append(AmbisonicsGUI.QueueObject(obj=self.window, func=AmbisonicsGUI.AmbisonicsGUI.playSound))
@@ -203,18 +223,19 @@ class PlayAmbisonics():
         """
         :returnData: np.ndarray, storage for calculated values, edits array
         :audioData: np.ndarray, ambisonics B format input values
+        :return: None
         """
         #AudioData = [Z, X, W, Y]? What is up with this order?
-        #SpeakerList[i] = [sin(azimuth), cos(azimuth), sin(zenith), cos(zenith)]
+        #SpeakerList[i] = [sin(theta), cos(theta), sin(zenith), cos(zenith)]
         # sin(A)*y, cos(A)*x, sin(z)*z
         for i in range(self.OUTPUT_CHANNEL_COUNT):
             if(len(self.speakerList[i]) != 0):
                 returnData[i] = self.speakerList[i][4]*(
-                    audioData[self.wChannel] + 
-                    self.speakerList[i][0]*audioData[self.xChannel] + 
-                    self.speakerList[i][1]*audioData[self.yChannel] + 
-                    self.speakerList[i][2]*audioData[self.zChannel]   
-                    )*self.normalizationMultiplier[0]
+                                audioData[self.wChannel]
+                                + self.speakerList[i][0]*audioData[self.xChannel]
+                                + self.speakerList[i][1]*audioData[self.yChannel]
+                                + self.speakerList[i][3]*audioData[self.zChannel]
+                                ) * self.normalizationMultiplier
             else:
                 returnData[i] = 0
 
@@ -222,16 +243,16 @@ class PlayAmbisonics():
     # def audioNormalizationAmbisonics(self, wVals, volume):
     #     MAX_POSSIBLE = 35565 #maximum possible value for the inputted data's type
     #     MAX_ALLOWED_VOLUME = MAX_POSSIBLE*volume
-    #     maxOccuringValue = max(max(wVals)*self.normalizationMultiplier[0], -1*(min(wVals)*self.normalizationMultiplier[0]))
+    #     maxOccuringValue = max(max(wVals)*self.normalizationMultiplier, -1*(min(wVals)*self.normalizationMultiplier))
     #     volumeDifference = (maxOccuringValue-MAX_ALLOWED_VOLUME)/MAX_POSSIBLE
     #     #normalizationMultiplier should always be greater than volumeDifference, both values expected to be between 0 and 1
     #     if(volumeDifference > 0):
-    #         self.normalizationMultiplier[0] -= volumeDifference/2 #add multiplier/exponential factor? of some kind?
+    #         self.normalizationMultiplier -= volumeDifference/2 #add multiplier/exponential factor? of some kind?
     #     else:
-    #         self.normalizationMultiplier[0] += (volume-self.normalizationMultiplier[0])/4
+    #         self.normalizationMultiplier += (volume-self.normalizationMultiplier)/4
 
     #     #TEST
-    #     print(round(number=self.normalizationMultiplier[0], ndigits= 5))
+    #     print(round(number=self.normalizationMultiplier, ndigits= 5))
     #     return
 
     def startAudioChannel(self, speed=1):
