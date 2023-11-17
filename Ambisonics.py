@@ -136,9 +136,9 @@ class PlayAmbisonics():
         arrT = arr.T
 
         arrT[0] = formattedData
-        arrT[1] = np.cos(self.soundLocationData[0]) * formattedData #* (1 - self.soundLocationData[2])
-        arrT[2] = np.sin(self.soundLocationData[0]) * formattedData #* (1 - self.soundLocationData[2])
-        arrT[3] = np.sin(self.soundLocationData[1]) * formattedData #* (1 - self.soundLocationData[2])
+        arrT[1] = np.cos(self.soundLocationData[0]) * formattedData #* np.power((1 - self.soundLocationData[2]), 2)
+        arrT[2] = np.sin(self.soundLocationData[0]) * formattedData #* np.power((1 - self.soundLocationData[2]), 2)
+        arrT[3] = np.sin(self.soundLocationData[1]) * formattedData #* np.power((1 - self.soundLocationData[2]), 2)
         return arr.flatten()
 
     def audioCallbackAmbisonics(self, inData, frameCount, timeInfo, status):
@@ -165,8 +165,11 @@ class PlayAmbisonics():
         """
 
         #TEST
-        #print("Audio Data:", AD[0], "    Return Data:", RD[0][0], "   Sound Data: [", round(self.speakerList[0][0], 3), round(self.speakerList[0][1], 3), round(self.speakerList[0][2], 3), round(self.speakerList[0][4], 3), "]   Location: [", round(self.soundLocationData[0], 3), round(self.soundLocationData[1], 3), round(self.soundLocationData[2], 3), "]")
-        
+        print(#"\nSpeaker List:\n", np.round(self.speakerList, 4),
+              "\nAudio Data:", AD[0], "  Sound Location:", np.round(self.soundLocationData, 4),
+              "\nReturn Data:", RD[0], 
+              )
+
         bytesData = RD.tobytes()
         if len(bytesData) < frameCount * self.OUTPUT_CHANNEL_COUNT * 2:
             self.window.queueList.append(
@@ -179,7 +182,7 @@ class PlayAmbisonics():
         :audioData: np.ndarray, ambisonics B format input values
         :return: None
         """
-        # AudioData = [Z, X, W, Y]? What is up with this order?
+        # AudioData = [W, X, Y, Z]? What is up with this order?
         # SpeakerList[i] = [sin(theta), cos(theta), sin(zenith), cos(zenith), speaker constant, on/off]
         # sin(A)*y, cos(A)*x, sin(z)*z
         for i in range(self.OUTPUT_CHANNEL_COUNT):
@@ -193,18 +196,6 @@ class PlayAmbisonics():
             else:
                 returnData[i] = 0
 
-    # def audioNormalizationAmbisonics(self, wVals, volume): MAX_POSSIBLE = 35565 #maximum possible value for the
-    # inputted data's type MAX_ALLOWED_VOLUME = MAX_POSSIBLE*volume maxOccuringValue = max(max(
-    # wVals)*self.normalizationMultiplier[0], -1*(min(wVals)*self.normalizationMultiplier[0])) volumeDifference = (
-    # maxOccuringValue-MAX_ALLOWED_VOLUME)/MAX_POSSIBLE #normalizationMultiplier should always be greater than
-    # volumeDifference, both values expected to be between 0 and 1 if(volumeDifference > 0):
-    # self.normalizationMultiplier[0] -= volumeDifference/2 #add multiplier/exponential factor? of some kind? else:
-    # self.normalizationMultiplier[0] += (volume-self.normalizationMultiplier[0])/4
-
-    #     #TEST
-    #     print(round(number=self.normalizationMultiplier, ndigits= 5))
-    #     return
-
     def startAudioChannel(self, speed=1):
         """
         :speed: float
@@ -216,8 +207,6 @@ class PlayAmbisonics():
                                   output=True,
                                   stream_callback=self.audioCallbackAmbisonics)
 
-        # TEST
-        print("Start!")
         self.ambFileCurPosition = self.ambFileStartPosition
         self.stream.start_stream()
 
@@ -226,11 +215,7 @@ class PlayAmbisonics():
         :return: None
         """
         self.ambFileCurPosition = self.ambFileEndPosition
-        # self.stream.stop_stream()
         self.stream.close()
-
-        # TEST
-        print("Done!")
 
 
 class AmbisonicsError(Exception):

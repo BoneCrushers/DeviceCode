@@ -152,13 +152,15 @@ class Checkboxes:
 
     def onClick(self, checkbox_index):
         self.checkboxStatus[checkbox_index] = not self.checkboxStatus[checkbox_index]
+        print(self.checkboxStatus)
         temp = self.window.speakerData
         for i in temp:
-            if(self.checkboxStatus[i[2]]):
+            if(self.checkboxStatus[i[4]]):
                 i[3] = 1
             else:
                 i[3] = 0
         self.window.setSpeakerInformation(temp)
+        # print(temp)
         
 
     def getData(self):

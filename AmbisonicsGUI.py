@@ -42,11 +42,7 @@ class AmbisonicsGUI:
         self.speakerData = speakerData
         self.AmbisonicsObj = Ambisonics.PlayAmbisonics(window=self, speakerData=speakerData,
                                                        fileName= os.getcwd()+"\\SoundFiles\\beep-01a.wav")
-
         self.queueList = []
-
-        # TEST
-        self.Permaplay = True
 
     def getCoords(self):
         """
@@ -71,13 +67,11 @@ class AmbisonicsGUI:
                 if temp != self.angleData:
                     self.angleData = temp
 
-                    # TEST
-                    print(round(temp[0], 3), round(temp[1], 3), round(temp[2], 3))
-
                     self.AmbisonicsObj.updateSoundLocationData()
+
                 # TEST
-                if self.Permaplay and not self.audioInProgress:
-                    self.playSound()
+                # if not self.audioInProgress:
+                #     self.playSound()
 
                 self.window.update_idletasks()
                 self.window.update()
@@ -90,12 +84,10 @@ class AmbisonicsGUI:
         Plays the sound if not playing, pauses if playing
         """
         if self.audioInProgress:
-            print("playsound ending audio")
             self.AmbisonicsObj.stopAudioChannel()
             tk.ttk.Button(self.window, text="Play", command=self.playSound).grid(row=5, column=1,
                                                                                  padx=0, pady=0)
         else:
-            print("playsound starting audio")
             self.AmbisonicsObj.startAudioChannel()
             tk.ttk.Button(self.window, text="Pause", command=self.playSound).grid(row=5, column=1,
                                                                                   padx=0, pady=0)
