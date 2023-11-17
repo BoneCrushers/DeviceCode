@@ -192,7 +192,7 @@ class PlayAmbisonics():
                         self.speakerList[i][0] * audioData[self.xChannel] +
                         self.speakerList[i][1] * audioData[self.yChannel] +
                         self.speakerList[i][2] * audioData[self.zChannel]
-                ) * self.normalizationMultiplier * (1 - self.soundLocationData[2])
+                ) * self.normalizationMultiplier #* (1 - self.soundLocationData[2])
             else:
                 returnData[i] = 0
 
