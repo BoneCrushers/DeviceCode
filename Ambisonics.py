@@ -136,9 +136,9 @@ class PlayAmbisonics():
         arrT = arr.T
 
         arrT[0] = formattedData
-        arrT[1] = np.cos(self.soundLocationData[0]) * formattedData #* np.power((1 - self.soundLocationData[2]), 2)
-        arrT[2] = np.sin(self.soundLocationData[0]) * formattedData #* np.power((1 - self.soundLocationData[2]), 2)
-        arrT[3] = np.sin(self.soundLocationData[1]) * formattedData #* np.power((1 - self.soundLocationData[2]), 2)
+        arrT[1] = np.cos(self.soundLocationData[0]) * formattedData
+        arrT[2] = np.sin(self.soundLocationData[0]) * formattedData
+        arrT[3] = np.sin(self.soundLocationData[1]) * formattedData 
         return arr.flatten()
 
     def audioCallbackAmbisonics(self, inData, frameCount, timeInfo, status):
@@ -192,7 +192,7 @@ class PlayAmbisonics():
                         self.speakerList[i][0] * audioData[self.xChannel] +
                         self.speakerList[i][1] * audioData[self.yChannel] +
                         self.speakerList[i][2] * audioData[self.zChannel]
-                ) * self.normalizationMultiplier
+                ) * self.normalizationMultiplier * (1 - self.soundLocationData[2])
             else:
                 returnData[i] = 0
 
