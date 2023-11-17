@@ -1,7 +1,6 @@
 import tkinter as tk
 import numpy as np
 
-
 class JoyStick:
     def __init__(self, parent, window):
         self.frame = tk.Frame(parent, height=200, width=150)

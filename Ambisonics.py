@@ -165,8 +165,8 @@ class PlayAmbisonics():
         """
 
         #TEST
-        print("Audio Data:", AD[0], "    Return Data:", RD[0][0], "   Sound Data: [", round(self.speakerList[0][0], 3), round(self.speakerList[0][1], 3), round(self.speakerList[0][2], 3), round(self.speakerList[0][4], 3), "]   Location: [", round(self.soundLocationData[0], 3), round(self.soundLocationData[1], 3), round(self.soundLocationData[2], 3), "]")
-
+        #print("Audio Data:", AD[0], "    Return Data:", RD[0][0], "   Sound Data: [", round(self.speakerList[0][0], 3), round(self.speakerList[0][1], 3), round(self.speakerList[0][2], 3), round(self.speakerList[0][4], 3), "]   Location: [", round(self.soundLocationData[0], 3), round(self.soundLocationData[1], 3), round(self.soundLocationData[2], 3), "]")
+        
         bytesData = RD.tobytes()
         if len(bytesData) < frameCount * self.OUTPUT_CHANNEL_COUNT * 2:
             self.window.queueList.append(

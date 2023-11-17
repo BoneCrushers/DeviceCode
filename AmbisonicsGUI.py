@@ -36,11 +36,12 @@ class AmbisonicsGUI:
         self.volumeSlider = GUI.VolumeSlider(volumeSliderFrame, self)
         self.checkboxes = GUI.Checkboxes(checkboxesFrame, self)
 
+        self.AccelerometerData = (0, 0, 0)
         self.angleData = 0
         self.audioInProgress = False
         self.speakerData = speakerData
         self.AmbisonicsObj = Ambisonics.PlayAmbisonics(window=self, speakerData=speakerData,
-                                                       fileName= os.getcwd()+"\\SoundFiles\\CenterMONO.wav")
+                                                       fileName= os.getcwd()+"\\SoundFiles\\beep-01a.wav")
 
         self.queueList = []
 
@@ -74,9 +75,9 @@ class AmbisonicsGUI:
                     print(round(temp[0], 3), round(temp[1], 3), round(temp[2], 3))
 
                     self.AmbisonicsObj.updateSoundLocationData()
-                # # TEST
-                # if self.Permaplay and not self.audioInProgress:
-                #     self.playSound()
+                # TEST
+                if self.Permaplay and not self.audioInProgress:
+                    self.playSound()
 
                 self.window.update_idletasks()
                 self.window.update()
@@ -115,7 +116,8 @@ class AmbisonicsGUI:
             zenith = (-1 * np.arctan2(data[2], data[1]) + np.pi) % (2 * np.pi)
         dist = (np.sqrt(np.power(data[0], 2) + np.power(data[1], 2) + np.power(data[2], 2))) / 75
 
-        # TEST SQUARE DIST
+
+        #TEST SQUARE DIST
         return theta, zenith, np.float_power(dist, 1.5)
     
     def selectFile(self):
@@ -134,14 +136,43 @@ class AmbisonicsGUI:
         self.AmbisonicsObj.updateSpeakerInformation(speakerData)
         self.AmbisonicsObj.updateSpeakerList()
 
+    def setAccelerometerData(self, data):
+        """
+        :data: (Pitch, Roll, Yaw)
+        :return: None
+        Sets the data recieved by an Accelerometer for use in calculations
+        """
+        self.AccelerometerData = (data[0]%2*np.pi, data[1]%2*np.pi, data[2]%2*np.pi)
+
 
 
 
 
 class QueueObject:
-    def __init__(self, obj, func):
+    def __init__(self, obj, func, data = []):
+        """
+        Use to queue a function call to window main loop
+        :obj: passed to func as 'self' parameter
+        :func: function name to be called
+        :data: MUST match length of the input parameters of the desired function call, in the correct order
+        Do 
+        """
         self.obj = obj
         self.func = func
+        self.data = data
 
     def update(self):
-        self.func(self=self.obj)
+        """
+        Why does it call twice?
+        """
+        t = len(self.data)
+        if(t == 0):
+            self.func(self.obj)
+        elif(t == 1):
+            self.func(self.obj, self.data[0])
+        elif(t == 2):
+            self.func(self.obj, self.data[0], self.data[1])
+        else:
+            self.func(self.obj, self.data[0], self.data[1], self.data[2])
+
+
