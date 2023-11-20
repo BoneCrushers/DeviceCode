@@ -15,13 +15,13 @@ setuptools.setup(
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.11',
     ],
     include_package_data=True,
-    package_data={'': ['json_schemas/']},
+    package_data={'': ['SoundFiles/']},
     entry_points = {
         'console_scripts': [
-            'classflask-demo=katogeek.classflask.__main__:main',
+            'bonecrusher=bonecrushers.__main__:main',
         ],
     }
 )
