@@ -13,13 +13,16 @@ from tkinter.filedialog import askopenfilename
 
 class AmbisonicsGUI:
     def __init__(self, speakerData, width=500, height=500):
-
+        """
+        Creation of the main Window itself
+        :speakerData: a list of 5 or 0 item lists, the 5 item lists have a data format: [Theta angle(rad), Zenith angle(rad), SpeakerConstant, on/off, Data Line (0-7)] for EACH SPEAKER
+        """
         self.window = tk.Tk()
         self.window.title("Ambisonics Editor")
         self.window.geometry("500x500")
         tk.ttk.Button(self.window, text="Play", command=self.playSound).grid(row=5, column=1, padx=0, pady=0)
         tk.ttk.Button(self.window, text="Select a file", command=self.selectFile).grid(row=5, column=0, padx=0, pady=0)
-
+        tk.ttk.Button(self.window, text="Test a Position", command=self.setCoords).grid(row=6, column=0, padx=0, pady=0)
         joystickSliderFrame = tk.Frame()
         joystickSliderFrame.grid(row=2, column=0, columnspan=1, pady=10)
 
@@ -41,7 +44,7 @@ class AmbisonicsGUI:
         self.audioInProgress = False
         self.speakerData = speakerData
         self.AmbisonicsObj = Ambisonics.PlayAmbisonics(window=self, speakerData=speakerData,
-                                                       fileName= os.getcwd()+"\\SoundFiles\\beep-01a.wav")
+                                                       fileName= os.getcwd()+"\\SoundFiles\\CenterMono.wav")
         self.queueList = []
 
     def getCoords(self):
@@ -51,6 +54,18 @@ class AmbisonicsGUI:
         t = self.circleWithCoordinates.getData()
         coords = (t[0], t[1], int(self.slider.getData()))
         return coords
+    
+    def setCoords(self, data=(0,0,0)):
+        """
+        Set x value, y value and z value. Will internally verify if data is valid
+        :data: Tuple, (X, Y, Z) values as integers. Scale based on max on 74, min -74
+        """
+        
+        str = input("Type the X Y Z coordinates you would like to place the sound at separated by a space, then hit enter.\n")
+        str = str.split(" ")
+        data = (int(str[0]), int(str[1]), int(str[2]))
+        self.circleWithCoordinates.setData((data[0], data[1]))
+        self.slider.setData(data[2])
 
     def loop(self):
         """
@@ -66,12 +81,7 @@ class AmbisonicsGUI:
                 temp = self.getAngleData()
                 if temp != self.angleData:
                     self.angleData = temp
-
                     self.AmbisonicsObj.updateSoundLocationData()
-
-                # TEST
-                # if not self.audioInProgress:
-                #     self.playSound()
 
                 self.window.update_idletasks()
                 self.window.update()
@@ -113,6 +123,9 @@ class AmbisonicsGUI:
         return theta, zenith, np.float_power(dist, 1.5)
     
     def selectFile(self):
+        """
+        Opens a unique window to select a file
+        """
         if(self.audioInProgress):
             self.playSound()
         

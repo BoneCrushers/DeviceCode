@@ -10,8 +10,8 @@ class PlayAmbisonics():
         """
         For use through a window.
         :window: AmbisonicsGUI object containing this object
-        :speakerData: list or tuple of 4 item lists holding data for the speaker. 
-            Each entry in the list should look like: [theta, zenith, speaker constant, data line]
+        :speakerData: list or tuple of 5 item lists holding data for the speaker. 
+            Each entry in the list should look like: [theta, zenith, speaker constant, on/off, data line]
         """
         self.stream = None
         wav_file = fileName
@@ -78,7 +78,6 @@ class PlayAmbisonics():
             return self.placeMonoAudio(temp)
         return temp
 
-    # FINISH
     def updateSpeakerList(self):
         """
         input is list of 3 or 0 item lists, 0 is no speaker, format [theta, zenith, coefficient]
@@ -97,9 +96,8 @@ class PlayAmbisonics():
                     self.SPEAKER_INFORMATION[i][3]]
             else:
                 self.speakerList[i] = []
-                # self.get #WHAT IS LINE HERE FOR?
 
-    # FINISH?
+
     def updateSpeakerInformation(self, data):
         """
         :data: [Theta angle(rad), Zenith angle(rad), SpeakerConstant, on/off, Data Line (0-7)] for EACH SPEAKER
