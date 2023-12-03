@@ -4,7 +4,6 @@ import os
 import struct
 import AmbisonicsGUI
 
-
 class PlayAmbisonics():
     def __init__(self, window, speakerData, fileName="Center.wav", ambvolume=.25, speed=1):
         """
@@ -215,14 +214,12 @@ class PlayAmbisonics():
         self.ambFileCurPosition = self.ambFileEndPosition
         self.stream.close()
 
-
 class AmbisonicsError(Exception):
     def __init__(self, message=""):
         """
         :message: Console output message on error
         """
         super().__init__(message)
-
 
 class AmbEndOfFileError(Exception):
     def __init__(self, message=""):

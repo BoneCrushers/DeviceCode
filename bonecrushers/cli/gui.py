@@ -7,10 +7,6 @@ import Ambisonics
 import os
 from tkinter.filedialog import askopenfilename
 
-
-
-
-
 class AmbisonicsGUI:
     def __init__(self, speakerData, width=500, height=500):
         """
@@ -179,5 +175,3 @@ class QueueObject:
             self.func(self.obj, self.data[0], self.data[1])
         else:
             self.func(self.obj, self.data[0], self.data[1], self.data[2])
-
-
