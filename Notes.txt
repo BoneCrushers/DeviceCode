@@ -50,14 +50,6 @@ To edit sound card settings:
 open command line: cmd in search bar and type
 mmsys.cpl
 
-
-    Utilizing github via command prompt:
-git status
-git add .
-git status
-git commit -m ""
-git push
-
 CHANNEL LAYOUT (with provided earbuds/soundcard)
 Computer setup (mmsys.cpl, configure usb soundcard, 7.1 surround)
 channel1 = Front port Left ear
@@ -68,14 +60,6 @@ channel5 = Back port Left ear
 channel6 = Back port Right ear
 channel7 = Surround port Left ear
 channel8 = Surround port Right ear
-
-
-  ***Things to check***
-is it better to separate out the 4 channel 
-Will need to edit both the main play sound function and audiocallback function?
-Are data lines crossed in the soundcard?
-Earbuds have 4 inputs, is this affecting output?
-Can we use wave file reader or are we going to have to use the standard read function?
 
 
 Common Variables:
@@ -104,18 +88,3 @@ c * (W + cos(a)*X + sin(a)*Y + cos(b)*Z)
 perfectly horizontal right side: a = 90, b = 0
     c * (W + (0)*X + (1)*Y + (0)*Z)
     
-
-pip requirements file?
-node.js for virtual environment installer
-end user testing strategy, how would we test this
-
-Areas that need improvement:
-
-circle mechanics: see if there is a function related to this to simplify our usage, we dont want overflow (distance > 1) and the currect method to deal with this is crude
-callback on window update: tied to above, another possibility to get around this
-
-Global variables: need fixed globals for these parts
-AmbisonicsGUI: window geometry (13), dist formula scalar (85)
-GUI: Joystick Class: frame dims (7), canvas dims (8), outerRadius (13), innerCircleRadius (15) Slider: dims, SCALE(lots of 74's and 75's, each has a purpose, define separately)
-
-evaluate3D in GUI, ** to np.power()
