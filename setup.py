@@ -18,10 +18,11 @@ setuptools.setup(
         'Programming Language :: Python :: 3.11',
     ],
     include_package_data=True,
-    package_data={'': ['SoundFiles']},
+    package_data={
+        "bonecrushers.data": ["*.wav"]},
     entry_points = {
         'console_scripts': [
-            'bcrush=bonecrushers.__main__:main',
+            'bcrush=bonecrushers.cli.test2:main',
         ],
     }
 )

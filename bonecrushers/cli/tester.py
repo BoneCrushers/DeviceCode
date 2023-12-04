@@ -1,9 +1,9 @@
-import AmbisonicsGUI
+from . import AmbisonicsGUI
 import numpy as np
 
 def main():
     # Run the program:
-    w = AmbisonicsGUI.AmbisonicsGUI([[-np.pi/2, np.pi/2, 1, 1, 0], #right top, 0
+    w = AmbisonicsGUI([[-np.pi/2, np.pi/2, 1, 1, 0], #right top, 0
                                     [-np.pi/2, np.pi*3/2, 1, 1, 1], #right bottom, 1
                                     [-np.pi*3/4, np.pi, 1, 1, 2], #right back, 2
                                     [-np.pi/4, 0, 1, 1, 3], #right front, 3

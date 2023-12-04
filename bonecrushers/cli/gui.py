@@ -1,9 +1,9 @@
 import tkinter as tk
 from tkinter import ttk
-import GUI
 import time
 import numpy as np
-import Ambisonics
+from bonecrushers.library import ambisonics as Ambisonics
+from bonecrushers.library import gui as GUI
 import os
 from tkinter.filedialog import askopenfilename
 
@@ -114,7 +114,6 @@ class AmbisonicsGUI:
             zenith = (-1 * np.arctan2(data[2], data[1]) + np.pi) % (2 * np.pi)
         dist = (np.sqrt(np.power(data[0], 2) + np.power(data[1], 2) + np.power(data[2], 2))) / 75
 
-
         #TEST SQUARE DIST
         return theta, zenith, np.float_power(dist, 1.5)
     
@@ -144,10 +143,6 @@ class AmbisonicsGUI:
         Sets the data recieved by an Accelerometer for use in calculations
         """
         self.AccelerometerData = (data[0]%2*np.pi, data[1]%2*np.pi, data[2]%2*np.pi)
-
-
-
-
 
 class QueueObject:
     def __init__(self, obj, func, data = []):
