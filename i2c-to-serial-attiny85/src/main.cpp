@@ -51,14 +51,15 @@
 #define MPU6050_PWR_MGMT_1    0x6b
 #define MPU6050_PING          0x75
 
+// Function definitions
 void get_and_write(uint8_t addr, uint8_t count);
 void set(uint8_t addr, uint8_t val);
 void startMpu6050();
 
 // device will transmit at TTL levels on port 4 (pin 3)
-SoftwareSerial ser = SoftwareSerial(0,PB4);
-unsigned char receiveBuffer[] = { 0,0,0,0,0,0 };
-bool active = false;
+SoftwareSerial ser = SoftwareSerial(0,PB4); // 0 = no receive pin
+//unsigned char receiveBuffer[] = { 0,0,0,0,0,0 };
+bool active = false; // switches to true when MPU6050 successfully started
 
 void setup() {
   ser.begin(9600);   // start software serial interface
@@ -102,8 +103,10 @@ void startMpu6050() {
   // wait a bit for everything to settle
   delay(500);
 
+  active = true; // set active flag
 }
 
+// Get and write a series of bytes from I2C device to software serial
 void get_and_write(uint8_t addr,uint8_t count) {
   TinyWireM.beginTransmission(MPU6050_ADDR);
   TinyWireM.write(addr);
@@ -115,6 +118,7 @@ void get_and_write(uint8_t addr,uint8_t count) {
   TinyWireM.endTransmission();
 }
 
+// Write a byte to I2C device
 void set(uint8_t addr, uint8_t val) {
   TinyWireM.beginTransmission(MPU6050_ADDR);
   TinyWireM.write(addr);
@@ -124,24 +128,25 @@ void set(uint8_t addr, uint8_t val) {
 
 void loop() {
 
+  // if sensor is not working (active was not set true), send dummy data
   if (!active) {
     ser.write((uint8_t)0xFF);
     for (int n = 0; n < 14; n++) {
       // write 14 bytes of 0 - sensor not working
       ser.write((uint8_t)0x00);
     }
-    delay(1000);
+    delay(1000); // longer delay is another clue to host that sensor failed
     return;
   }
 
   // Write the three data points from the MPU6050.
-  get_and_write( MPU6050_ACCEL , 6);
-  get_and_write( MPU6050_GYRO  , 6);
-  get_and_write( MPU6050_TEMP  , 2);
+  get_and_write( MPU6050_ACCEL , 6 );
+  get_and_write( MPU6050_GYRO  , 6 );
+  get_and_write( MPU6050_TEMP  , 2 );
 
   // Write 0xFF as the framing byte
-  ser.write((uint8_t)0xFF);
+  ser.write( (uint8_t)0xFF );
 
-  delay(100);
+  delay(50);
 
 }
