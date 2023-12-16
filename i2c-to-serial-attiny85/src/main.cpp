@@ -79,7 +79,7 @@ void startMpu6050() {
   TinyWireM.endTransmission();
 
   // if we did not get the correct ID byte, do nothing.
-  if (verifyByte != 0x68);
+  if (verifyByte != 0x68)
     return;
 
   // write configuration bytes and start sensor
