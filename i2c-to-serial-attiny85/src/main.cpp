@@ -6,10 +6,10 @@
  *  Simple I2C to Serial Translator
  *
  *  for BoneCrushers - MPU6050 accelerometer/gyroscope module
- *  
+ *
  *  (c) 2023 Flint Million <flint.million@mnsu.edu>
  *  License: Creative Commons CC-BY-SA
- * 
+ *
  *  This code is intended to run on an ATtiny85 (or 45). It simply
  *  reads the MPU6050 accelerometer/gyroscope position module and
  *  transmits the read data over serial.
@@ -17,12 +17,29 @@
  *  Wiring:
  *  MPU6050 SCL -> PB2 (pin 7)
  *  MPU6050 SDA -> PB1 (pin 6)
- *  Serial  TX  -> PB4 (pin 3) 
- * 
- * 
+ *  Serial      -> PB4 (pin 3)
+ *
+ *  The program will read 14 bytes of data from the accelerometer/gyro
+ *  module roughly every 50ms. Between each data frame a byte of 0xFF
+ *  will be transmitted. You can use these 0xFF bytes as framing markers.
+ *  (for example, you can initialize a buffer of 64 bytes, and once you
+ *  identify 0xFF bytes every 15 bytes, you can deduce the start of each
+ *  data frame with relative reliability.)
+ *
+ *  Serial output is 9600bps - roughly 960 bytes/sec, which yields a
+ *  theoretical maximum of 64 data frames per second. 50ms will yield
+ *  ~20 data frames/second which, when combined with the overhead of
+ *  reading from the I2C bus, should yield adequate performance without
+ *  unnecessary lag or delay.
+ *
+ *  Data frame format:
+ *   [ 0: 5] - Accelerometer raw data X, Y, Z
+ *   [ 6:11] - Gyroscope raw data X, Y, Z
+ *   [12:13] - Temperature raw data - see MPU6050 data sheet for algorithm
+ *   [14]    - 0xFF - framing byte
  */
 
-// Device address
+// Device I2C address
 #define MPU6050_ADDR          0x68
 
 // Register addresses
@@ -63,7 +80,7 @@ void startMpu6050() {
   // if we did not get the correct ID byte, do nothing.
   if (verifyByte != 0x68);
     return;
-  
+
   // write configuration bytes and start sensor
   // these are hard-coded for this implementation for simplicity.
 
