@@ -6,10 +6,10 @@
  *  Simple I2C to Serial Translator
  *
  *  for BoneCrushers - MPU6050 accelerometer/gyroscope module
- *  
+ *
  *  (c) 2023 Flint Million <flint.million@mnsu.edu>
  *  License: Creative Commons CC-BY-SA
- * 
+ *
  *  This code is intended to run on an ATtiny85 (or 45). It simply
  *  reads the MPU6050 accelerometer/gyroscope position module and
  *  transmits the read data over serial.
@@ -17,12 +17,29 @@
  *  Wiring:
  *  MPU6050 SCL -> PB2 (pin 7)
  *  MPU6050 SDA -> PB1 (pin 6)
- *  Serial  TX  -> PB4 (pin 3) 
- * 
- * 
+ *  Serial      -> PB4 (pin 3)
+ *
+ *  The program will read 14 bytes of data from the accelerometer/gyro
+ *  module roughly every 50ms. Between each data frame a byte of 0xFF
+ *  will be transmitted. You can use these 0xFF bytes as framing markers.
+ *  (for example, you can initialize a buffer of 64 bytes, and once you
+ *  identify 0xFF bytes every 15 bytes, you can deduce the start of each
+ *  data frame with relative reliability.)
+ *
+ *  Serial output is 9600bps - roughly 960 bytes/sec, which yields a
+ *  theoretical maximum of 64 data frames per second. 50ms will yield
+ *  ~20 data frames/second which, when combined with the overhead of
+ *  reading from the I2C bus, should yield adequate performance without
+ *  unnecessary lag or delay.
+ *
+ *  Data frame format:
+ *   [ 0: 5] - Accelerometer raw data X, Y, Z
+ *   [ 6:11] - Gyroscope raw data X, Y, Z
+ *   [12:13] - Temperature raw data - see MPU6050 data sheet for algorithm
+ *   [14]    - 0xFF - framing byte
  */
 
-// Device address
+// Device I2C address
 #define MPU6050_ADDR          0x68
 
 // Register addresses
@@ -34,14 +51,15 @@
 #define MPU6050_PWR_MGMT_1    0x6b
 #define MPU6050_PING          0x75
 
+// Function definitions
 void get_and_write(uint8_t addr, uint8_t count);
 void set(uint8_t addr, uint8_t val);
 void startMpu6050();
 
 // device will transmit at TTL levels on port 4 (pin 3)
-SoftwareSerial ser = SoftwareSerial(0,PB4);
-unsigned char receiveBuffer[] = { 0,0,0,0,0,0 };
-bool active = false;
+SoftwareSerial ser = SoftwareSerial(0,PB4); // 0 = no receive pin
+//unsigned char receiveBuffer[] = { 0,0,0,0,0,0 };
+bool active = false; // switches to true when MPU6050 successfully started
 
 void setup() {
   ser.begin(9600);   // start software serial interface
@@ -61,9 +79,9 @@ void startMpu6050() {
   TinyWireM.endTransmission();
 
   // if we did not get the correct ID byte, do nothing.
-  if (verifyByte != 0x68);
+  if (verifyByte != 0x68)
     return;
-  
+
   // write configuration bytes and start sensor
   // these are hard-coded for this implementation for simplicity.
 
@@ -85,8 +103,10 @@ void startMpu6050() {
   // wait a bit for everything to settle
   delay(500);
 
+  active = true; // set active flag
 }
 
+// Get and write a series of bytes from I2C device to software serial
 void get_and_write(uint8_t addr,uint8_t count) {
   TinyWireM.beginTransmission(MPU6050_ADDR);
   TinyWireM.write(addr);
@@ -98,6 +118,7 @@ void get_and_write(uint8_t addr,uint8_t count) {
   TinyWireM.endTransmission();
 }
 
+// Write a byte to I2C device
 void set(uint8_t addr, uint8_t val) {
   TinyWireM.beginTransmission(MPU6050_ADDR);
   TinyWireM.write(addr);
@@ -107,24 +128,25 @@ void set(uint8_t addr, uint8_t val) {
 
 void loop() {
 
+  // if sensor is not working (active was not set true), send dummy data
   if (!active) {
     ser.write((uint8_t)0xFF);
     for (int n = 0; n < 14; n++) {
       // write 14 bytes of 0 - sensor not working
       ser.write((uint8_t)0x00);
     }
-    delay(1000);
+    delay(1000); // longer delay is another clue to host that sensor failed
     return;
   }
 
   // Write the three data points from the MPU6050.
-  get_and_write( MPU6050_ACCEL , 6);
-  get_and_write( MPU6050_GYRO  , 6);
-  get_and_write( MPU6050_TEMP  , 2);
+  get_and_write( MPU6050_ACCEL , 6 );
+  get_and_write( MPU6050_GYRO  , 6 );
+  get_and_write( MPU6050_TEMP  , 2 );
 
   // Write 0xFF as the framing byte
-  ser.write((uint8_t)0xFF);
+  ser.write( (uint8_t)0xFF );
 
-  delay(100);
+  delay(50);
 
 }
