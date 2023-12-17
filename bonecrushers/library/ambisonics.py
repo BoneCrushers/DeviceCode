@@ -2,7 +2,7 @@ import pyaudio
 import numpy as np
 import os
 import struct
-import AmbisonicsGUI
+from bonecrushers.cli import gui
 
 class PlayAmbisonics():
     def __init__(self, window, speakerData, fileName="Center.wav", ambvolume=.25, speed=1):
@@ -170,7 +170,7 @@ class PlayAmbisonics():
         bytesData = RD.tobytes()
         if len(bytesData) < frameCount * self.OUTPUT_CHANNEL_COUNT * 2:
             self.window.queueList.append(
-                AmbisonicsGUI.QueueObject(obj=self.window, func=AmbisonicsGUI.AmbisonicsGUI.playSound))
+                gui.QueueObject(obj=self.window, func=gui.AmbisonicsGUI.playSound))
         return bytesData, pyaudio.paContinue
 
     def ambisonicCalculations(self, returnData, audioData):

@@ -38,7 +38,8 @@ setuptools.setup(
         "bonecrushers.data": ["*.wav"]},
     entry_points = {
         'console_scripts': [
-            'bcrush-test=bonecrushers.cli.test:main',
+            'bcrush-i2ctest=bonecrushers.cli.i2c_test:main',
+            'bcrush-guitest=bonecrushers.cli.gui_test:main',
         ],
     }
 )

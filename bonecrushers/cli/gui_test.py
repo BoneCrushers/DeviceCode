@@ -1,4 +1,4 @@
-from . import AmbisonicsGUI
+from .gui import AmbisonicsGUI
 import numpy as np
 
 def main():

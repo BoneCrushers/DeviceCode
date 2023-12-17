@@ -40,7 +40,7 @@ class AmbisonicsGUI:
         self.audioInProgress = False
         self.speakerData = speakerData
         self.AmbisonicsObj = Ambisonics.PlayAmbisonics(window=self, speakerData=speakerData,
-                                                       fileName= os.getcwd()+"\\SoundFiles\\CenterMono.wav")
+                                                       fileName= os.getcwd()+"\\bonecrushers\\data\\CenterMono.wav")
         self.queueList = []
 
     def getCoords(self):
