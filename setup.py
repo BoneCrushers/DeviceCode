@@ -26,7 +26,8 @@ setuptools.setup(
     install_requires=[
         "numpy==1.26.0",
         "pyaudio==0.2.14",
-        "smbus2==0.4.3"
+        "smbus2==0.4.3",
+        "pyusb"
     ],
     classifiers=[
         'Programming Language :: Python',
@@ -38,7 +39,9 @@ setuptools.setup(
         "bonecrushers.data": ["*.wav"]},
     entry_points = {
         'console_scripts': [
+            'bcrush=bonecrushers.cli.experiment:main',
             'bcrush-i2ctest=bonecrushers.cli.i2c_test:main',
+            'bcrush-acceltest=bonecrushers.cli.accel_test:main',
             'bcrush-guitest=bonecrushers.cli.gui_test:main',
         ],
     }

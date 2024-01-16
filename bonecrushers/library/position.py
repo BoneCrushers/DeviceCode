@@ -12,7 +12,7 @@
 # I2C address for the position sensor is 0x68.
 # Detect device by probing data address 0x75 - should return 0x68.
 
-import smbus2
+from . import ch341
 import struct
 
 REG_GYRO_CONFIG = 0x1b
@@ -68,6 +68,10 @@ class Positioner:
     
     def available(self):
 
+        # if no device detected, return false automatically
+        if self.BUS is None:
+            return False
+        
         # try to read from address 0x75 of device
         try:
             b = self.BUS.read_byte_data(self.ADDR,0x75)
@@ -76,9 +80,15 @@ class Positioner:
         except:
             return False # something went wrong, we don't really care what.
 
-    def __init__(self, i2c_bus=10, i2c_addr=0x68):
+    def __init__(self, i2c_addr=0x68):
 
-        self.BUS = smbus2.SMBus(i2c_bus)
+        try:
+            self.BUS = ch341.CH341()
+            self.BUS.set_speed(100)
+        except ConnectionError:
+            self.BUS = None
+            return
+
         self.ADDR = i2c_addr
 
         # test if device is available
@@ -96,4 +106,3 @@ class Positioner:
 
         # wake up device
         self._write(REG_PWR_MGMT_1,0b00000001)
-

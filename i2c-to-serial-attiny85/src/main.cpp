@@ -16,7 +16,7 @@
  *
  *  Wiring:
  *  MPU6050 SCL -> PB2 (pin 7)
- *  MPU6050 SDA -> PB1 (pin 6)
+ *  MPU6050 SDA -> PB0 (pin 5)
  *  Serial      -> PB4 (pin 3)
  *
  *  The program will read 14 bytes of data from the accelerometer/gyro
@@ -25,6 +25,12 @@
  *  (for example, you can initialize a buffer of 64 bytes, and once you
  *  identify 0xFF bytes every 15 bytes, you can deduce the start of each
  *  data frame with relative reliability.)
+ * 
+ *  It takes 15 bytes - 120 bits - to send a sample, plus 30 start/stop 
+ *  bits - 150 bits. At 9600 bps, we can send 480 line bits per 50ms.
+ *  We therefore have plenty of bandwidth to send samples at 50ms.
+ *  The receiving application needs to frame the bytes to extract the
+ *  samples themselves.
  *
  *  Serial output is 9600bps - roughly 960 bytes/sec, which yields a
  *  theoretical maximum of 64 data frames per second. 50ms will yield
@@ -59,12 +65,38 @@ void startMpu6050();
 // device will transmit at TTL levels on port 4 (pin 3)
 SoftwareSerial ser = SoftwareSerial(0,PB4); // 0 = no receive pin
 //unsigned char receiveBuffer[] = { 0,0,0,0,0,0 };
+
 bool active = false; // switches to true when MPU6050 successfully started
 
 void setup() {
+
+  // indicate that device is alive
+  delay(500);
+
+  pinMode(PB1,OUTPUT);
+  for (int n = 0; n < 5; n++) {
+    PORTB |= 0b00000010;
+    delay(100);
+    PORTB &= 0b11111101;
+    delay(100);
+  }
+
   ser.begin(9600);   // start software serial interface
+  ser.write("serial ok\n");
+
   TinyWireM.begin(); // start I2C on standardized pins for ATtiny85
   startMpu6050();    // start the MPU6050 sensor
+
+  if (!active) {
+    ser.write("i2c error\n");
+  }
+  else {
+    ser.write("i2c ok\n");
+  }
+
+  ser.write("run\n");
+  ser.write("\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff");
+
   delay(2000);       // wait 5s after startup for everything to settle
 }
 
@@ -97,9 +129,6 @@ void startMpu6050() {
   // wake up device
   set( MPU6050_PWR_MGMT_1   , 0b00000001 );
 
-  // Write 0xFF as the opening framing byte
-  ser.write((uint8_t)0xFF);
-
   // wait a bit for everything to settle
   delay(500);
 
@@ -130,11 +159,12 @@ void loop() {
 
   // if sensor is not working (active was not set true), send dummy data
   if (!active) {
-    ser.write((uint8_t)0xFF);
     for (int n = 0; n < 14; n++) {
       // write 14 bytes of 0 - sensor not working
       ser.write((uint8_t)0x00);
     }
+    ser.write((uint8_t)0xFF);
+    PORTB ^= 0b00000010;
     delay(1000); // longer delay is another clue to host that sensor failed
     return;
   }
@@ -147,6 +177,7 @@ void loop() {
   // Write 0xFF as the framing byte
   ser.write( (uint8_t)0xFF );
 
+  PORTB ^= 0b00000010;
   delay(50);
 
 }
